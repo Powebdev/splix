@@ -88,13 +88,15 @@
 			<canvas id="logoCanvas"></canvas>
 			<br>
 			<div id="notification" style="display: none"></div>
-			<div id="lastStats" style="display: none">
-				<div id="lastStatsLeft" class="lastStatsBlock" style="text-align: right" data-i18n="stats.lastGame">Last game:</div>
-				<div id="lastStatsRight" class="lastStatsBlock" style="text-align: left"></div>
-			</div>
-			<div id="bestStats" style="display: none">
-				<div id="bestStatsLeft" class="lastStatsBlock" style="text-align: right" data-i18n="stats.bestGame">Best game:</div>
-				<div id="bestStatsRight" class="lastStatsBlock" style="text-align: left"></div>
+			<div class="player-stats">
+				<div id="lastStats" class="stat-card">
+					<div id="lastStatsLeft" class="stat-card__label" data-i18n="stats.lastGame">Last game</div>
+					<div id="lastStatsRight" class="stat-card__value"></div>
+				</div>
+				<div id="bestStats" class="stat-card">
+					<div id="bestStatsLeft" class="stat-card__label" data-i18n="stats.bestGame">Best game</div>
+					<div id="bestStatsRight" class="stat-card__value"></div>
+				</div>
 			</div>
 			<main id="mainMenu">
 				<div id="adboxContainer" class="fancyBox greenBox" style="display: none">

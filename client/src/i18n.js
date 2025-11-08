@@ -16,8 +16,8 @@ const translations = {
 		"form.join": "Join",
 		
 		// Stats
-		"stats.lastGame": "Last game:",
-		"stats.bestGame": "Best game:",
+		"stats.lastGame": "Last game",
+		"stats.bestGame": "Best game",
 		"stats.kills": "Kills",
 		"stats.blocksCaptured": "Blocks captured",
 		"stats.score": "Score",
@@ -127,8 +127,8 @@ const translations = {
 		"form.join": "Присоединиться",
 		
 		// Stats
-		"stats.lastGame": "Последняя игра:",
-		"stats.bestGame": "Лучшая игра:",
+		"stats.lastGame": "Последняя игра",
+		"stats.bestGame": "Лучшая игра",
 		"stats.kills": "Убийства",
 		"stats.blocksCaptured": "Захвачено блоков",
 		"stats.score": "Очки",

@@ -330,14 +330,109 @@ a:hover {
 	text-shadow: 1px 1px 1px #7b1e1e, 3px 3px 10px rgba(0, 0, 0, 0.3);
 }
 
-#lastStats, #bestStats {
-	color: white;
-	margin-bottom: 10px;
+.player-stats {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	max-width: 360px;
+	margin: 0 auto 20px;
 }
 
-.lastStatsBlock {
-	width: 48%;
-	display: inline-block;
+#lastStats, #bestStats {
+	color: inherit;
+}
+
+.stat-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 10px 16px;
+	background: linear-gradient(135deg, rgba(54, 46, 40, 0.85), rgba(23, 20, 18, 0.75));
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 16px;
+	box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	min-height: 70px;
+	transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	background: linear-gradient(135deg, rgba(255, 206, 120, 0.2), rgba(86, 197, 255, 0.15));
+	opacity: 0;
+	transition: opacity 0.25s ease;
+}
+
+.stat-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.stat-card:hover::after {
+	opacity: 1;
+}
+
+.stat-card__label {
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-size: 0.68rem;
+	font-weight: 600;
+	margin-bottom: 4px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.stat-card__value {
+	font-size: 0.92rem;
+	font-weight: 700;
+	line-height: 1.2;
+	color: #ffffff;
+	min-height: 1em;
+	transition: opacity 0.3s ease;
+}
+
+.stat-card__value:empty::before {
+	content: "—";
+	color: rgba(255, 255, 255, 0.35);
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+@media (min-width: 720px) {
+	.player-stats {
+		flex-direction: row;
+		max-width: 500px;
+	}
+}
+
+@media (max-width: 480px) {
+	.player-stats {
+		max-width: 300px;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+
+	.stat-card {
+		padding: 10px 14px;
+		border-radius: 14px;
+		min-height: 60px;
+	}
+
+	.stat-card__label {
+		font-size: 0.62rem;
+		margin-bottom: 3px;
+	}
+
+	.stat-card__value {
+		font-size: 0.9rem;
+		min-height: 0.95em;
+	}
 }
 
 #skinScreenCanvas {
