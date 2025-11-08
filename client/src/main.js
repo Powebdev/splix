@@ -383,59 +383,95 @@ var titleLines = [
 		offset: 1.2,
 		posOffset: [10, 0],
 	},
-	{ //L
-		line: [[236, 41], [236, 138]],
-		speed: 2,
-		offset: 0.7,
-		posOffset: [0, 0],
-	},
-	{ //I
-		line: [[276, 41], [276, 45]],
-		speed: 3,
-		offset: 0.4,
-		posOffset: [0, 0],
-	},
-	{ //I
-		line: [[276, 74], [276, 138]],
-		speed: 2,
-		offset: 0,
-		posOffset: [0, 0],
-	},
-	{ //X
-		line: [[318, 74], [366, 138]],
-		speed: 2,
+	{ //A - left side
+		line: [[247, 138], [247, 74]],
+		speed: 1,
 		offset: 0.5,
-		posOffset: [-5, 0],
+		posOffset: [0, 0],
 	},
-	{ //X
-		line: [[318, 138], [366, 74]],
-		speed: 4,
-		offset: 0,
-		posOffset: [-5, 0],
+	{ //A - top curve
+		line: [[247, 74], [247, 41, 270, 41, 293, 74]],
+		speed: 1,
+		offset: 0.8,
+		posOffset: [0, 0],
+	},
+	{ //A - right side
+		line: [[293, 74], [293, 138]],
+		speed: 1,
+		offset: 1.1,
+		posOffset: [0, 0],
+	},
+	{ //A - crossbar
+		line: [[262, 106], [278, 106]],
+		speed: 1,
+		offset: 1.4,
+		posOffset: [0, 0],
+	},
+	{ //C - left vertical
+		line: [[344, 106], [344, 63]],
+		speed: 1,
+		offset: 0.3,
+		posOffset: [0, 0],
+	},
+	{ //C - top curve
+		line: [[344, 63], [344, 41, 365, 41, 386, 63]],
+		speed: 1,
+		offset: 0.6,
+		posOffset: [0, 0],
+	},
+	{ //C - bottom curve
+		line: [[344, 106], [344, 149, 365, 149, 386, 106]],
+		speed: 1,
+		offset: 0.9,
+		posOffset: [0, 0],
+	},
+	{ //E - left vertical
+		line: [[450, 41], [450, 138]],
+		speed: 1,
+		offset: 0.5,
+		posOffset: [0, 0],
+	},
+	{ //E - top horizontal
+		line: [[450, 41], [479, 41]],
+		speed: 1,
+		offset: 0.8,
+		posOffset: [0, 0],
+	},
+	{ //E - middle horizontal
+		line: [[450, 89], [474, 89]],
+		speed: 1,
+		offset: 1.1,
+		posOffset: [0, 0],
+	},
+	{ //E - bottom horizontal
+		line: [[450, 138], [479, 138]],
+		speed: 1,
+		offset: 1.4,
+		posOffset: [0, 0],
 	},
 	{ //.
-		line: [[415, 136], [415, 134, 419, 134, 419, 136], [419, 138, 415, 138, 415, 136]],
+		line: [[530, 136], [530, 134, 534, 134, 534, 136], [534, 138, 530, 138, 530, 136]],
 		speed: 1,
 		offset: 0,
-		posOffset: [-25, 0],
+		posOffset: [0, 0],
 	},
 	{ //I
-		line: [[454, 41], [454, 45]],
+		line: [[569, 41], [569, 45]],
 		speed: 3,
 		offset: 0.8,
-		posOffset: [-25, 0],
+		posOffset: [0, 0],
 	},
 	{ //I
-		line: [[454, 74], [454, 138]],
+		line: [[569, 74], [569, 138]],
 		speed: 2,
 		offset: 0.5,
-		posOffset: [-25, 0],
+		posOffset: [0, 0],
 	},
 	{ //O
-		line: [[500, 106], [500, 63, 562, 63, 562, 106], [562, 149, 500, 149, 500, 106]],
+		line: [[615, 106], [615, 63, 677, 63, 677, 106], [677, 149, 615, 149, 615, 106]],
 		speed: 1,
 		offset: 0.2,
-		posOffset: [-38, 0],
+		posOffset: [0, 0],
 	},
 ];
 
@@ -1345,6 +1381,23 @@ window.onload = function () {
 	setUglyText();
 	setSpectatorText();
 
+	// Menu toggle
+	var menuToggle = document.getElementById("menuToggle");
+	var menuLinks = document.getElementById("mainMenuLinks");
+	if (menuToggle && menuLinks) {
+		menuToggle.onclick = function() {
+			menuToggle.classList.toggle("active");
+			menuLinks.classList.toggle("active");
+		};
+		// Close menu when clicking outside
+		document.addEventListener("click", function(event) {
+			if (!menuToggle.contains(event.target) && !menuLinks.contains(event.target)) {
+				menuToggle.classList.remove("active");
+				menuLinks.classList.remove("active");
+			}
+		});
+	}
+
 	initTutorial();
 	initSkinScreen();
 	initTitle();
@@ -1368,7 +1421,7 @@ window.onload = function () {
 
 	var devString = IS_DEV_BUILD ? " (dev build)" : "";
 	console.log(
-		"%c splix.io %c\n\n\nversion " + CLIENT_VERSION + " loaded" + devString,
+		"%c Space.io %c\n\n\nversion " + CLIENT_VERSION + " loaded" + devString,
 		"color: #a22929; font-size: 50px; font-family: arial; text-shadow: 1px 1px #7b1e1e, 2px 2px #7b1e1e;",
 		"",
 	);
@@ -2534,7 +2587,7 @@ function ctxCanvasSize(ctx, dontUseQuality) {
 		w = h = 60;
 	}
 	if (canvasTransformType == canvasTransformTypes.TITLE) {
-		w = 520;
+		w = 750;
 		h = 180;
 	}
 	var quality = dontUseQuality ? 1 : canvasQuality;
