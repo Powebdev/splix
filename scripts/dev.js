@@ -137,6 +137,27 @@ if (!Deno.args.includes("--no-init")) {
 			return new Response(INSECURE_LOCALHOST_SERVERMANAGER_TOKEN);
 		} else if (url.pathname.startsWith("/servermanager")) {
 			return serverManager.handleRequest(request, info);
+		} else if (url.pathname == "/about" || url.pathname == "/about.html") {
+			const aboutHtml = await Deno.readTextFile(resolve("client/about.html"));
+			return new Response(aboutHtml, {
+				headers: {
+					"Content-Type": "text/html",
+				},
+			});
+		} else if (url.pathname == "/leaderboards" || url.pathname == "/leaderboards.html") {
+			const leaderboardsHtml = await Deno.readTextFile(resolve("client/leaderboards.html"));
+			return new Response(leaderboardsHtml, {
+				headers: {
+					"Content-Type": "text/html",
+				},
+			});
+		} else if (url.pathname == "/privacy" || url.pathname == "/privacy.html") {
+			const privacyHtml = await Deno.readTextFile(resolve("client/privacy.html"));
+			return new Response(privacyHtml, {
+				headers: {
+					"Content-Type": "text/html",
+				},
+			});
 		}
 
 		for (const dir of serveRootDirs) {

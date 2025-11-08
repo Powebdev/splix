@@ -26,6 +26,42 @@ import {
 	setSkinPattern,
 } from "./skinSelection.js";
 import { lsSet, mod } from "./util.js";
+import "./i18n.js";
+
+function translateWithFallback(key, params, fallback) {
+	if (window.i18n && typeof window.i18n.t === "function") {
+		return window.i18n.t(key, params);
+	}
+	return fallback;
+}
+
+function getPluralKey(baseKey, count) {
+	const lang = window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+		? window.i18n.getCurrentLanguage()
+		: "en";
+
+	if (lang === "ru") {
+		const mod10 = count % 10;
+		const mod100 = count % 100;
+		if (mod10 === 1 && mod100 !== 11) {
+			return baseKey + ".one";
+		}
+		if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
+			return baseKey + ".few";
+		}
+		return baseKey + ".many";
+	}
+
+	return baseKey + (count === 1 ? ".one" : ".many");
+}
+
+function translateCount(baseKey, count, fallback) {
+	if (window.i18n && typeof window.i18n.t === "function") {
+		const key = getPluralKey(baseKey, count);
+		return window.i18n.t(key, { count });
+	}
+	return fallback;
+}
 
 //stackoverflow.com/a/15666143/3625298
 var MAX_PIXEL_RATIO = (function () {
@@ -1395,6 +1431,37 @@ window.onload = function () {
 				menuToggle.classList.remove("active");
 				menuLinks.classList.remove("active");
 			}
+		});
+	}
+
+	// Language switcher
+	var langEn = document.getElementById("langEn");
+	var langRu = document.getElementById("langRu");
+	if (langEn && langRu && window.i18n) {
+		// Update active language button
+		function updateLanguageButtons() {
+			var currentLang = window.i18n.getCurrentLanguage();
+			langEn.classList.toggle("active", currentLang === "en");
+			langRu.classList.toggle("active", currentLang === "ru");
+		}
+		
+		langEn.onclick = function() {
+			window.i18n.setLanguage("en");
+			updateLanguageButtons();
+		};
+		langRu.onclick = function() {
+			window.i18n.setLanguage("ru");
+			updateLanguageButtons();
+		};
+		
+		// Initialize button states
+		updateLanguageButtons();
+		
+		// Listen for language changes to update dynamic text
+		document.addEventListener("languageChanged", function() {
+			setQuality();
+			setUglyText();
+			setSpectatorText();
 		});
 	}
 
@@ -4122,21 +4189,22 @@ function setQuality() {
 	}
 	if (localStorage.quality != "auto") {
 		canvasQuality = parseFloat(localStorage.quality);
-		qualityText.innerHTML = "Quality: " + {
-			"0.4": "low",
-			"0.7": "medium",
-			"1": "high",
-		}[localStorage.quality];
+		const qualityMap = {
+			"0.4": window.i18n.t("quality.low"),
+			"0.7": window.i18n.t("quality.medium"),
+			"1": window.i18n.t("quality.high"),
+		};
+		qualityText.innerHTML = window.i18n.t("menu.quality") + ": " + qualityMap[localStorage.quality];
 	} else {
-		qualityText.innerHTML = "Quality: auto";
+		qualityText.innerHTML = window.i18n.t("menu.quality") + ": " + window.i18n.t("quality.auto");
 	}
 }
 
 var uglyText;
 function setUglyText() {
 	updateUglyMode();
-	var onOff = uglyMode ? "on" : "off";
-	uglyText.innerHTML = "Ugly mode: " + onOff;
+	var onOff = uglyMode ? window.i18n.t("mode.on") : window.i18n.t("mode.off");
+	uglyText.innerHTML = window.i18n.t("menu.uglyMode") + ": " + onOff;
 }
 
 function toggleUglyMode() {
@@ -4159,8 +4227,8 @@ function updateUglyMode() {
 var spectatorText;
 function setSpectatorText() {
 	updateSpectatorMode();
-	var onOff = spectatorMode ? "on" : "off";
-	spectatorText.innerHTML = "Spectator mode: " + onOff;
+	var onOff = spectatorMode ? window.i18n.t("mode.on") : window.i18n.t("mode.off");
+	spectatorText.innerHTML = window.i18n.t("menu.spectatorMode") + ": " + onOff;
 }
 
 function toggleSpectatorMode() {
@@ -4732,10 +4800,10 @@ function loop(timeStamp) {
 
 			//tutorial text
 			if (t > 1 && tutorialPrevTimer < 1) {
-				tutorialText.innerHTML = "Close an area to fill it with your color.";
+				tutorialText.innerHTML = window.i18n.t("tutorial.closeArea");
 			}
 			if (t > 30 && tutorialPrevTimer < 30) {
-				tutorialText.innerHTML = "Don't get hit by other players.";
+				tutorialText.innerHTML = window.i18n.t("tutorial.dontGetHit");
 			}
 			var textOpacity = clamp01(5 - Math.abs((t - 20) * 0.5));
 			textOpacity += clamp01(4 - Math.abs((t - 40) * 0.5));
@@ -4795,15 +4863,30 @@ function loop(timeStamp) {
 					if (lastStatNo1Time <= 0 && bestStatNo1Time <= 0) {
 						lastStatCounter++;
 					} else {
-						lastStatValueElem.innerHTML = parseTimeToString(lastStatNo1Time) + " on #1";
-						bestStatValueElem.innerHTML = parseTimeToString(bestStatNo1Time) + " on #1";
+						var lastNo1Time = parseTimeToString(lastStatNo1Time);
+						var bestNo1Time = parseTimeToString(bestStatNo1Time);
+						lastStatValueElem.innerHTML = translateWithFallback(
+							"stats.rankTime",
+							{ time: lastNo1Time },
+							lastNo1Time + " on #1",
+						);
+						bestStatValueElem.innerHTML = translateWithFallback(
+							"stats.rankTime",
+							{ time: bestNo1Time },
+							bestNo1Time + " on #1",
+						);
 					}
 				}
 				if (lastStatCounter == 1) {
 					if (lastStatKiller === "" && lastStatKiller.replace(/\s/g, "").length > 0) {
 						lastStatCounter++;
 					} else {
-						lastStatValueElem.innerHTML = "killed by " + filter(htmlEscape(lastStatKiller));
+						var killerName = filter(htmlEscape(lastStatKiller));
+						lastStatValueElem.innerHTML = translateWithFallback(
+							"stats.killedBy",
+							{ killer: killerName },
+							"killed by " + killerName,
+						);
 						bestStatValueElem.innerHTML = "";
 					}
 				}
@@ -4811,33 +4894,56 @@ function loop(timeStamp) {
 					if (lastStatKills <= 0 && bestStatKills <= 0) {
 						lastStatCounter++;
 					} else {
-						var killsS = lastStatKills == 1 ? "" : "s";
-						lastStatValueElem.innerHTML = lastStatKills + " player" + killsS + " killed";
-						var killsS2 = bestStatKills == 1 ? "" : "s";
-						bestStatValueElem.innerHTML = bestStatKills + " player" + killsS2 + " killed";
+						var killsFallback = lastStatKills + " player" + (lastStatKills == 1 ? "" : "s") + " killed";
+						lastStatValueElem.innerHTML = translateCount("stats.kills", lastStatKills, killsFallback);
+						var bestKillsFallback = bestStatKills + " player" + (bestStatKills == 1 ? "" : "s") + " killed";
+						bestStatValueElem.innerHTML = translateCount("stats.kills", bestStatKills, bestKillsFallback);
 					}
 				}
 				if (lastStatCounter == 3) {
-					lastStatValueElem.innerHTML = parseTimeToString(lastStatAlive) + " alive";
-					bestStatValueElem.innerHTML =
-						parseTimeToString(Math.max(lastStatAlive, localStorage.getItem("bestStatAlive"))) + " alive";
+					var aliveTime = parseTimeToString(lastStatAlive);
+					lastStatValueElem.innerHTML = translateWithFallback(
+						"stats.alive",
+						{ time: aliveTime },
+						aliveTime + " alive",
+					);
+					var bestAliveValue = Math.max(lastStatAlive, localStorage.getItem("bestStatAlive"));
+					var bestAliveTime = parseTimeToString(bestAliveValue);
+					bestStatValueElem.innerHTML = translateWithFallback(
+						"stats.alive",
+						{ time: bestAliveTime },
+						bestAliveTime + " alive",
+					);
 				}
 				if (lastStatCounter == 4) {
 					if (lastStatBlocks <= 0 && bestStatBlocks <= 0) {
 						lastStatCounter++;
 					} else {
-						var blockS = lastStatBlocks == 1 ? "" : "s";
-						lastStatValueElem.innerHTML = lastStatBlocks + " block" + blockS + " captured";
-						var blockS2 = bestStatBlocks == 1 ? "" : "s";
-						bestStatValueElem.innerHTML = bestStatBlocks + " block" + blockS2 + " captured";
+						var blocksFallback = lastStatBlocks + " block" + (lastStatBlocks == 1 ? "" : "s") + " captured";
+						lastStatValueElem.innerHTML = translateCount("stats.blocks", lastStatBlocks, blocksFallback);
+						var bestBlocksFallback =
+							bestStatBlocks + " block" + (bestStatBlocks == 1 ? "" : "s") + " captured";
+						bestStatValueElem.innerHTML = translateCount("stats.blocks", bestStatBlocks, bestBlocksFallback);
 					}
 				}
 				if (lastStatCounter == 5) {
 					if (lastStatLbRank <= 0 && bestStatLbRank <= 0) {
 						lastStatCounter = 0;
 					} else {
-						lastStatValueElem.innerHTML = lastStatLbRank == 0 ? "" : "#" + lastStatLbRank + " highest rank";
-						bestStatValueElem.innerHTML = bestStatLbRank == 0 ? "" : "#" + bestStatLbRank + " highest rank";
+						lastStatValueElem.innerHTML = lastStatLbRank == 0
+							? ""
+							: translateWithFallback(
+								"stats.highestRank",
+								{ rank: lastStatLbRank },
+								"#" + lastStatLbRank + " highest rank",
+							);
+						bestStatValueElem.innerHTML = bestStatLbRank == 0
+							? ""
+							: translateWithFallback(
+								"stats.highestRank",
+								{ rank: bestStatLbRank },
+								"#" + bestStatLbRank + " highest rank",
+							);
 					}
 				}
 			}

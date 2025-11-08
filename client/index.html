@@ -5,6 +5,7 @@
 		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 		<meta content="utf-8" http-equiv="encoding">
 		<link rel="stylesheet" href="./static/style.css" />
+		<script type="module" src="./src/i18n.js"></script>
 		<script type="module" src="./src/main.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no" />
 		<meta
@@ -88,16 +89,16 @@
 			<br>
 			<div id="notification" style="display: none"></div>
 			<div id="lastStats" style="display: none">
-				<div id="lastStatsLeft" class="lastStatsBlock" style="text-align: right">Last game:</div>
+				<div id="lastStatsLeft" class="lastStatsBlock" style="text-align: right" data-i18n="stats.lastGame">Last game:</div>
 				<div id="lastStatsRight" class="lastStatsBlock" style="text-align: left"></div>
 			</div>
 			<div id="bestStats" style="display: none">
-				<div id="bestStatsLeft" class="lastStatsBlock" style="text-align: right">Best game:</div>
+				<div id="bestStatsLeft" class="lastStatsBlock" style="text-align: right" data-i18n="stats.bestGame">Best game:</div>
 				<div id="bestStatsRight" class="lastStatsBlock" style="text-align: left"></div>
 			</div>
 			<main id="mainMenu">
 				<div id="adboxContainer" class="fancyBox greenBox" style="display: none">
-					<button class="remove-ads-button">Don't want to see ads?</button>
+					<button class="remove-ads-button" data-i18n="ads.removeAds">Don't want to see ads?</button>
 					<div id="adboxContent"></div>
 				</div>
 				<div id="centerSection">
@@ -108,18 +109,19 @@
 							maxlength="20"
 							id="nameInput"
 							placeholder="Enter your name"
+							data-i18n="form.namePlaceholder"
 						/>
 						<br>
 						<select id="serverSelect" disabled class="fancyBox inputFancy">
-							<option>Loading...</option>
+							<option data-i18n="form.loading">Loading...</option>
 						</select>
-						<input type="submit" disabled class="fancyBox fancyBtn" id="joinButton" value="Join" />
+						<input type="submit" disabled class="fancyBox fancyBtn" id="joinButton" value="Join" data-i18n="form.join" />
 					</form>
 					<div id="tutorialText" style="opacity: 0"></div>
 					<canvas id="tutorialCanvas" width="300" height="300"></canvas>
 				</div>
 				<div id="newsbox" class="fancyBox greenBox">
-					<h1>Recent updates!</h1>
+					<h1 data-i18n="news.recentUpdates">Recent updates!</h1>
 					<h3>Spectator mode</h3>
 					<p>
 						You can now spectate games using the 'spectator mode' toggle in the top right. Check it out! To
@@ -285,7 +287,7 @@
 			<br>
 			<br>
 			<div id="expandPage"></div>
-			<canvas id="skinButton" title="block customization" width="30" height="30"></canvas>
+			<canvas id="skinButton" data-i18n-title="skin.title" title="block customization" width="30" height="30"></canvas>
 			<div id="skinButtonShadow"></div>
 			<div id="cornerLinks">
 				<div id="menuToggle" class="menu-toggle">
@@ -294,13 +296,18 @@
 					<span></span>
 				</div>
 				<div id="mainMenuLinks" class="menu-links">
-					<a href="/about">about</a>
-					<a href="/leaderboards">leaderboards</a>
-					<a href="/privacy">privacy</a>
+					<a href="/about" data-i18n="menu.about">about</a>
+					<a href="/leaderboards" data-i18n="menu.leaderboards">leaderboards</a>
+					<a href="/privacy" data-i18n="menu.privacy">privacy</a>
 					<hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 10px 0;">
 					<a id="qualityText">Quality: high</a>
 					<a id="uglyText">Ugly mode: off</a>
 					<a id="spectatorText">Spectator mode: off</a>
+					<hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 10px 0;">
+					<div id="languageSwitcher" class="language-switcher">
+						<button id="langEn" class="lang-btn" data-lang="en" title="English">🇬🇧</button>
+						<button id="langRu" class="lang-btn" data-lang="ru" title="Русский">🇷🇺</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -308,7 +315,7 @@
 			<div class="skinButtonContainer">
 				<div id="prevColor" class="skinButton skinButtonLeft"></div>
 				<div class="skinValue">
-					Color<peli-plus-icon id="colorPlusIcon"></peli-plus-icon><span
+					<span data-i18n="skin.color">Color</span><peli-plus-icon id="colorPlusIcon"></peli-plus-icon><span
 						id="colorLockIcon"
 						class="lock-icon"
 					></span>
@@ -318,7 +325,7 @@
 			<div class="skinButtonContainer">
 				<div id="prevPattern" class="skinButton skinButtonLeft"></div>
 				<div class="skinValue">
-					Pattern<peli-plus-icon id="patternPlusIcon"></peli-plus-icon><span
+					<span data-i18n="skin.pattern">Pattern</span><peli-plus-icon id="patternPlusIcon"></peli-plus-icon><span
 						id="patternLockIcon"
 						class="lock-icon"
 					></span>
@@ -326,22 +333,21 @@
 				<div id="nextPattern" class="skinButton skinButtonRight"></div>
 			</div>
 			<div class="skinButtonContainer">
-				<div class="skinValue" id="skinSave">Save</div>
+				<div class="skinValue" id="skinSave" data-i18n="skin.save">Save</div>
 			</div>
 			<canvas id="skinScreenCanvas" class="fullscreenCanvas"></canvas>
 		</div>
 		<div id="playUI" style="display: none">
 			<div id="scoreBlock" class="greenBox">
 				<span>
-					<span>Kills: </span>
-					<span id="myKills" class="rank"></span>
+					<span data-i18n="stats.kills">Kills</span>: <span id="myKills" class="rank"></span>
 				</span>
 				<br>
-				<span>Blocks captured: <span id="blockCaptureCount" class="rank"></span></span>
+				<span><span data-i18n="stats.blocksCaptured">Blocks captured</span>: <span id="blockCaptureCount" class="rank"></span></span>
 				<br>
-				<span title="blocks + kills x 500">Score: <span id="score"></span></span>
+				<span><span data-i18n="stats.score">Score</span>: <span id="score"></span></span>
 				<br>
-				<span>Your rank: <span id="myRank" class="rank"></span> of <span
+				<span><span data-i18n="stats.yourRank">Your rank</span>: <span id="myRank" class="rank"></span> <span data-i18n="stats.of">of</span> <span
 						id="totalPlayers"
 						class="rank"
 					></span></span>
