@@ -25,6 +25,14 @@ function serverToClientColorId(colorId) {
 
 export const initializeControlSocketMessage = "initializeControlSocket";
 
+const AUTH_MESSAGE_TYPE = "AUTH";
+const AUTH_OK_MESSAGE = "AUTH_OK";
+const AUTH_ERROR_MESSAGE = "AUTH_ERROR";
+
+/**
+ * @typedef {import("./Main.js").AuthResult} AuthResult
+ */
+
 /**
  * Handles the messaging between server and client.
  * Received messages are converted to a format that is easier to work with.
@@ -38,10 +46,18 @@ export class WebSocketConnection {
 	#socket;
 	#mainInstance;
 	#game;
+	#ip;
 	/** @type {Player?} */
 	#player = null;
 	/** @type {ControlSocketConnection?} */
 	#controlSocket = null;
+	/** @type {boolean} */
+	#isAuthenticated = false;
+	/** @type {AuthResult?} */
+	#authResult = null;
+	#lockName = false;
+	#canJoinGame = false;
+	#pendingReady = false;
 
 	get controlSocket() {
 		return this.#controlSocket;
@@ -57,6 +73,7 @@ export class WebSocketConnection {
 		this.#mainInstance = mainInstance;
 		this.#socket = socket;
 		this.#game = game;
+		this.#ip = ip;
 	}
 
 	static get SendAction() {
@@ -253,9 +270,14 @@ export class WebSocketConnection {
 	 * @param {string} data
 	 */
 	async onStringMessage(data) {
-		if (this.#player) return;
-
 		const parsed = JSON.parse(data);
+
+		if (!this.#player && typeof parsed == "object" && parsed && parsed.type == AUTH_MESSAGE_TYPE) {
+			await this.#handleAuthMessage(parsed);
+			return;
+		}
+
+		if (this.#player) return;
 
 		if (this.#controlSocket) {
 			this.#controlSocket.onMessage(parsed);
@@ -280,28 +302,7 @@ export class WebSocketConnection {
 			const version = view.getUint16(1);
 			this.#protocolVersion = version;
 		} else if (messageType == WebSocketConnection.ReceiveAction.READY) {
-			if (this.#protocolVersion == null) {
-				this.#protocolVersion = 0;
-			}
-			if (this.#player) return;
-			this.#player = this.#game.createPlayer(this, {
-				skin: this.#receivedSkinData,
-				name: this.#receivedName,
-				isSpectator: this.#receivedSpectatorMode,
-			});
-			this.#player.sendCurrentViewportChunk();
-			// Clients only really expect a single number, so we'll just take the maximum size of the map.
-			const mapSize = Math.max(this.#game.arena.width, this.#game.arena.height);
-			this.#sendMapSize(mapSize);
-			for (const message of this.#game.getMinimapMessages()) {
-				this.send(message);
-			}
-			const leaderboard = this.#game.lastLeaderboardMessage;
-			if (leaderboard) {
-				this.send(leaderboard);
-			}
-			this.#sendReady();
-			this.#sendLegacyReady();
+			this.#handleReadyMessage();
 		} else if (messageType == WebSocketConnection.ReceiveAction.PING) {
 			this.#lastPingTime = performance.now();
 			this.#sendPong();
@@ -351,6 +352,7 @@ export class WebSocketConnection {
 			};
 		} else if (messageType == WebSocketConnection.ReceiveAction.SET_USERNAME) {
 			if (this.#player) return;
+			if (this.#lockName) return;
 			const name = this.#parseBinaryStringMessage(data);
 			if (name) this.#receivedName = name;
 		} else if (messageType == WebSocketConnection.ReceiveAction.HONK) {
@@ -389,8 +391,85 @@ export class WebSocketConnection {
 		}
 	}
 
+	/**
+	 * Sends lobby/match status updates to the client.
+	 * @param {string} state
+	 * @param {Record<string, unknown>} [payload]
+	 */
+	setLobbyState(state, payload = {}) {
+		const message = {
+			type: "LOBBY_STATUS",
+			state,
+			...payload,
+		};
+		try {
+			this.#socket.send(JSON.stringify(message));
+		} catch {
+			// best effort only
+		}
+	}
+
+	/**
+	 * Enables the player to join the match once a slot becomes available.
+	 * @param {Record<string, unknown>} [payload]
+	 */
+	enableGameplay(payload = {}) {
+		this.#canJoinGame = true;
+		this.setLobbyState("active", payload);
+		if (this.#pendingReady) {
+			this.#handleReadyMessage();
+		}
+	}
+
+	updateExtraLife(active) {
+		try {
+			this.#socket.send(JSON.stringify({ type: "EXTRA_LIFE", active }));
+		} catch {
+			// ignore
+		}
+	}
+
 	#sendReady() {
 		this.send(new Uint8Array([WebSocketConnection.SendAction.READY]));
+	}
+
+	#handleReadyMessage() {
+		if (this.#protocolVersion == null) {
+			this.#protocolVersion = 0;
+		}
+		if (this.#player) return;
+		if (!this.#isAuthenticated) {
+			this.#sendAuthError("not_authenticated");
+			this.close();
+			return;
+		}
+		if (!this.#canJoinGame) {
+			this.#pendingReady = true;
+			return;
+		}
+		this.#pendingReady = false;
+		this.#player = this.#game.createPlayer(this, {
+			skin: this.#receivedSkinData,
+			name: this.#receivedName,
+			isSpectator: this.#receivedSpectatorMode,
+			auth: this.#authResult,
+		});
+		this.#player.sendCurrentViewportChunk();
+		const mapSize = Math.max(this.#game.arena.width, this.#game.arena.height);
+		this.#sendMapSize(mapSize);
+		for (const message of this.#game.getMinimapMessages()) {
+			this.send(message);
+		}
+		const leaderboard = this.#game.lastLeaderboardMessage;
+		if (leaderboard) {
+			this.send(leaderboard);
+		}
+		this.#sendReady();
+		this.#sendLegacyReady();
+		this.updateExtraLife(Boolean(this.#authResult && this.#authResult.hasExtraLife));
+		if (this.#mainInstance?.lobbyManager) {
+			this.#mainInstance.lobbyManager.notifyPlayerJoined(this);
+		}
 	}
 
 	/**
@@ -897,6 +976,9 @@ export class WebSocketConnection {
 		if (this.#player) {
 			this.#game.removePlayer(this.#player);
 		}
+		if (this.#mainInstance?.lobbyManager) {
+			this.#mainInstance.lobbyManager.handleConnectionClosed(this);
+		}
 	}
 
 	/**
@@ -907,5 +989,84 @@ export class WebSocketConnection {
 		if (now - this.#lastPingTime > 1000 * 60 * 5) {
 			this.close();
 		}
+	}
+
+	get authResult() {
+		return this.#authResult;
+	}
+
+	async #handleAuthMessage(parsed) {
+		if (this.#isAuthenticated) {
+			this.#sendAuthOk();
+			return;
+		}
+
+		const token = typeof parsed.token == "string" ? parsed.token : null;
+		if (!token || token.length < 8) {
+			this.#sendAuthError("invalid_token");
+			this.close();
+			return;
+		}
+
+		const hooks = this.#mainInstance.hooks;
+		if (!hooks || typeof hooks.authenticatePlayer != "function") {
+			console.warn("No authenticatePlayer hook configured; rejecting connection.");
+			this.#sendAuthError("auth_not_configured");
+			this.close();
+			return;
+		}
+
+		let result;
+		try {
+			result = await hooks.authenticatePlayer({
+				connection: this,
+				token,
+				ip: this.#ip ?? "",
+			});
+		} catch (e) {
+			console.error("Authentication hook threw an error", e);
+			this.#sendAuthError("auth_hook_error");
+			this.close();
+			return;
+		}
+
+		if (!result || !result.success) {
+			const reason = result && "reason" in result ? result.reason : "unauthorized";
+			this.#sendAuthError(reason);
+			this.close();
+			return;
+		}
+
+		this.#authResult = result;
+		this.#isAuthenticated = true;
+
+		if (result.playerName) {
+			this.#receivedName = result.playerName;
+			this.#lockName = true;
+		}
+
+		if (typeof result.isSpectator == "boolean") {
+			this.#receivedSpectatorMode = result.isSpectator;
+		}
+
+		if (typeof result.plusSkinsAllowed == "boolean") {
+			this.plusSkinsAllowed = result.plusSkinsAllowed;
+		}
+
+		if (this.#mainInstance?.lobbyManager) {
+			this.#mainInstance.lobbyManager.registerConnection(this);
+		} else {
+			this.#canJoinGame = true;
+		}
+
+		this.#sendAuthOk();
+	}
+
+	#sendAuthOk() {
+		this.send(JSON.stringify({ type: AUTH_OK_MESSAGE }));
+	}
+
+	#sendAuthError(reason) {
+		this.send(JSON.stringify({ type: AUTH_ERROR_MESSAGE, reason }));
 	}
 }

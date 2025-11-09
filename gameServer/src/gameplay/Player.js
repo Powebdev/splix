@@ -41,6 +41,7 @@ import { PlayerEventHistory } from "./PlayerEventHistory.js";
  * @property {SkinData?} skin
  * @property {string} name
  * @property {boolean} isSpectator
+ * @property {import("../Main.js").AuthResult?} [auth]
  */
 
 export class Player {
@@ -48,6 +49,7 @@ export class Player {
 	#game;
 	#connection;
 	#mainInstance;
+	#auth = null;
 
 	#currentTileType = 0;
 
@@ -148,6 +150,7 @@ export class Player {
 	#rankingFirstStartTime = 0;
 	#rankingFirstSeconds = 0;
 	#maxTrailLength = 0;
+	#sessionReported = false;
 
 	/**
 	 * @typedef DeathState
@@ -182,6 +185,23 @@ export class Player {
 		return this.#isSpectator;
 	}
 
+	get auth() {
+		return this.#auth;
+	}
+
+	get hasExtraLife() {
+		return Boolean(this.#auth && this.#auth.hasExtraLife);
+	}
+
+	consumeExtraLife() {
+		if (this.#auth) {
+			this.#auth.hasExtraLife = false;
+		}
+		if (typeof this.#connection.updateExtraLife == "function") {
+			this.#connection.updateExtraLife(false);
+		}
+	}
+
 	/**
 	 * The list of other players that this player currently has in their viewport.
 	 * We use this to keep track of when new players have entered this player's viewport.
@@ -213,6 +233,7 @@ export class Player {
 		this.#game = game;
 		this.#connection = connection;
 		this.#mainInstance = mainInstance;
+		this.#auth = options.auth ?? null;
 
 		if (options.skin) {
 			this.#skinColorId = options.skin.colorId;
@@ -928,6 +949,7 @@ export class Player {
 	 */
 	#killPlayer(otherPlayer, deathType) {
 		if (otherPlayer.dead) return false;
+		const victimHadExtraLife = otherPlayer.hasExtraLife;
 		this.#eventHistory.addEvent(this.getPosition(), {
 			type: "kill-player",
 			playerId: otherPlayer.id,
@@ -937,6 +959,9 @@ export class Player {
 		if (deathType != "arena-bounds") {
 			this.#killCount++;
 			this.#sendMyScore();
+			if (deathType == "player" && otherPlayer != this) {
+				this.#emitKillEvent(otherPlayer, victimHadExtraLife);
+			}
 		}
 		return true;
 	}
@@ -956,6 +981,9 @@ export class Player {
 			type: deathType,
 			killerName,
 		};
+		if (this.hasExtraLife) {
+			this.consumeExtraLife();
+		}
 		this.game.broadcastPlayerDeath(this);
 	}
 
@@ -1005,6 +1033,10 @@ export class Player {
 		for (const player of this.#inOtherPlayerViewports) {
 			player.#playerRemovedFromViewport(this);
 		}
+		this.#emitSessionEnd();
+		if (this.#mainInstance?.lobbyManager) {
+			this.#mainInstance.lobbyManager.handlePlayerRemoved(this);
+		}
 	}
 
 	#allMyTilesCleared = false;
@@ -1027,6 +1059,87 @@ export class Player {
 	fireAllMyTileUpdates() {
 		if (this.#isSpectator) return;
 		this.game.arena.fireAllPlayerTileUpdates(this.id);
+	}
+
+	/**
+	 * @param {Player} victim
+	 */
+	#emitKillEvent(victim, victimHadExtraLife) {
+		if (!this.#mainInstance?.websocketManager) return;
+		const payload = this.#createKillEventPayload(victim, victimHadExtraLife);
+		if (!payload) return;
+		this.#mainInstance.websocketManager.notifyControlSocketsKillEvent(payload);
+	}
+
+	/**
+	 * @param {Player} victim
+	 * @param {boolean} victimHadExtraLife
+	 * @returns {import("../../WebSocketManager.js").KillEventPayload?}
+	 */
+	#createKillEventPayload(victim, victimHadExtraLife) {
+		const killerAuth = this.#auth;
+		const victimAuth = victim.auth;
+
+		const killerTelegramId =
+			killerAuth && typeof killerAuth.telegramId == "number" ? killerAuth.telegramId : null;
+		const victimTelegramId =
+			victimAuth && typeof victimAuth.telegramId == "number" ? victimAuth.telegramId : null;
+
+		const depositTier =
+			victimAuth && victimAuth.depositTier != null ? String(victimAuth.depositTier) : null;
+
+		if (killerTelegramId == null || depositTier == null) {
+			return null;
+		}
+
+		const victimMetadata =
+			victimAuth && victimAuth.metadata && typeof victimAuth.metadata == "object" ? victimAuth.metadata : {};
+
+		return {
+			killerTelegramId,
+			killerUserId: killerAuth && typeof killerAuth.userId == "string" ? killerAuth.userId : null,
+			victimTelegramId,
+			victimUserId: victimAuth && typeof victimAuth.userId == "string" ? victimAuth.userId : null,
+			victimHasExtraLife: victimHadExtraLife,
+			victimIsBot: Boolean(victimMetadata && victimMetadata.isBot),
+			depositTier,
+			occurredAt: new Date().toISOString(),
+			serverId: this.#mainInstance?.serverId ?? null,
+			matchId: null,
+		};
+	}
+
+	#emitSessionEnd() {
+		if (this.#sessionReported || this.#isSpectator) return;
+		this.#sessionReported = true;
+		if (!this.#mainInstance?.websocketManager) return;
+
+		const auth = this.#auth;
+		const telegramId = auth && typeof auth.telegramId == "number" ? auth.telegramId : null;
+		if (telegramId == null) return;
+
+		const now = Date.now();
+		const startedAtMs = now - (performance.now() - this.#joinTime);
+
+		const depositTier =
+			auth && auth.depositTier != null ? String(auth.depositTier) : null;
+		if (depositTier == null) return;
+
+		const payload = {
+			userTelegramId: telegramId,
+			userId: auth && typeof auth.userId == "string" ? auth.userId : null,
+			serverId: this.#mainInstance?.serverId ?? null,
+			matchId: null,
+			depositTier,
+			kills: this.#killCount,
+			maxTiles: this.#maxCapturedTileCount,
+			capturedTiles: this.#capturedTileCount,
+			timeAliveSeconds: this.#getTimeAliveSeconds(),
+			startedAt: new Date(startedAtMs).toISOString(),
+			endedAt: new Date(now).toISOString(),
+		};
+
+		this.#mainInstance.websocketManager.notifyControlSocketsSessionEnd(payload);
 	}
 
 	/**

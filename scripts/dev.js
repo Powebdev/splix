@@ -75,6 +75,22 @@ if (!Deno.args.includes("--no-init")) {
 			peliAuthCodeReceived(connection, code) {
 				connection.plusSkinsAllowed = true;
 			},
+			async authenticatePlayer({ token }) {
+				const safeToken = typeof token == "string" && token.length > 0 ? token : crypto.randomUUID();
+				return {
+					success: true,
+					playerName: `Dev-${safeToken.slice(0, 6)}`,
+					telegramId: 10_000 + Math.floor(Math.random() * 1_000_000),
+					userId: crypto.randomUUID(),
+					depositTier: 1,
+					plusSkinsAllowed: true,
+					isSpectator: false,
+					hasExtraLife: false,
+					metadata: {
+						isDev: true,
+					},
+				};
+			},
 		},
 	});
 	// @ts-ignore

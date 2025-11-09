@@ -133,6 +133,14 @@ function redirectQuery() {
 }
 redirectQuery();
 
+var AUTH_TOKEN = (function () {
+	try {
+		return new URLSearchParams(window.location.search).get("token");
+	} catch {
+		return null;
+	}
+})();
+
 function isIframe() {
 	try {
 		return window.self !== window.top;
@@ -1497,6 +1505,13 @@ window.onload = function () {
 //when WebSocket connection is established
 function onOpen() {
 	isConnecting = false;
+	if (AUTH_TOKEN) {
+		try {
+			ws.send(JSON.stringify({ type: "AUTH", token: AUTH_TOKEN }));
+		} catch (error) {
+			console.error("Failed to send auth token", error);
+		}
+	}
 	sendLegacyVersion();
 	sendProtocolVersion();
 	sendName();

@@ -43,7 +43,11 @@ export class ServerManager {
 			}
 		}
 
-		const server = new GameServer(id, this.#mainInstance.leaderboardManager);
+		const server = new GameServer(
+			id,
+			this.#mainInstance.leaderboardManager,
+			this.#mainInstance.paymentServiceBridge,
+		);
 		this.#servers.set(id, server);
 		this.#mainInstance.adminWebsocketManager.sendAllServerConfigs();
 		this.#saveServersData();
@@ -111,7 +115,11 @@ export class ServerManager {
 			/** @type {GameServerConfigs | undefined} */ (this.#mainInstance.persistentStorage.get("servers"));
 		if (serversData) {
 			for (const serverData of serversData) {
-				const server = new GameServer(serverData.id, this.#mainInstance.leaderboardManager);
+				const server = new GameServer(
+					serverData.id,
+					this.#mainInstance.leaderboardManager,
+					this.#mainInstance.paymentServiceBridge,
+				);
 				this.#servers.set(serverData.id, server);
 				server.setConfig(serverData.config);
 			}

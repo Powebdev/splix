@@ -29,7 +29,12 @@ import { LeaderboardManager } from "./LeaderboardManager.js";
  * @param {GameServer} gameServer
  * @param {LeaderboardManager} leaderboardManager
  */
-function createResponseHandlers(gameServer, leaderboardManager) {
+/**
+ * @typedef {import("./PaymentServiceBridge.js").KillEventPayload} KillEventPayload
+ * @typedef {import("./PaymentServiceBridge.js").SessionEndPayload} SessionEndPayload
+ */
+
+function createResponseHandlers(gameServer, leaderboardManager, paymentBridge) {
 	return {
 		/**
 		 * @param {number} count
@@ -47,6 +52,28 @@ function createResponseHandlers(gameServer, leaderboardManager) {
 		 */
 		reportPlayerScore: (score) => {
 			leaderboardManager.reportPlayerScore(score);
+		},
+		/**
+		 * @param {KillEventPayload} event
+		 */
+		reportKillEvent: async (event) => {
+			if (!paymentBridge) return;
+			try {
+				await paymentBridge.reportKillEvent(gameServer.id, event);
+			} catch (error) {
+				console.error("Failed to forward kill event", error);
+			}
+		},
+		/**
+		 * @param {SessionEndPayload} event
+		 */
+		reportSessionEnd: async (event) => {
+			if (!paymentBridge) return;
+			try {
+				await paymentBridge.reportSessionEnd(gameServer.id, event);
+			} catch (error) {
+				console.error("Failed to forward session end event", error);
+			}
 		},
 	};
 }
@@ -76,9 +103,14 @@ export class GameServer {
 	 * @param {number} id
 	 * @param {LeaderboardManager} leaderboardManager
 	 */
-	constructor(id, leaderboardManager) {
+	/**
+	 * @param {number} id
+	 * @param {LeaderboardManager} leaderboardManager
+	 * @param {import("./PaymentServiceBridge.js").PaymentServiceBridge} paymentBridge
+	 */
+	constructor(id, leaderboardManager, paymentBridge) {
 		this.#id = id;
-		this.#messenger.setResponseHandlers(createResponseHandlers(this, leaderboardManager));
+		this.#messenger.setResponseHandlers(createResponseHandlers(this, leaderboardManager, paymentBridge));
 		this.#messenger.setSendHandler((data) => {
 			if (!this.#persistentWebSocket || !this.#persistentWebSocket.connected) {
 				throw new Error("Assertion failed, tried to send a control socket message without an open socket");

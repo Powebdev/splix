@@ -1,11 +1,36 @@
+const getEnv = (key) => (typeof Deno != "undefined" && "env" in Deno ? Deno.env.get(key) ?? undefined : undefined);
 import { ApplicationLoop } from "./ApplicationLoop.js";
 import { Game } from "./gameplay/Game.js";
+import { LobbyManager } from "./LobbyManager.js";
+import { BotManager } from "./bots/BotManager.js";
 import { WebSocketConnection } from "./WebSocketConnection.js";
 import { WebSocketManager } from "./WebSocketManager.js";
 
 /**
+ * @typedef AuthContext
+ * @property {WebSocketConnection} connection
+ * @property {string} token
+ * @property {string} ip
+ */
+
+/**
+ * @typedef AuthResult
+ * @property {boolean} success
+ * @property {string} [reason]
+ * @property {string} [playerName]
+ * @property {boolean} [plusSkinsAllowed]
+ * @property {boolean} [isSpectator]
+ * @property {boolean} [hasExtraLife]
+ * @property {number} [depositTier]
+ * @property {string} [userId]
+ * @property {number} [telegramId]
+ * @property {Record<string, unknown>} [metadata]
+ */
+
+/**
  * @typedef GameServerHooks
- * @property {(connection: WebSocketConnection, code: string) => void} peliAuthCodeReceived
+ * @property {(connection: WebSocketConnection, code: string) => void} [peliAuthCodeReceived]
+ * @property {(context: AuthContext) => Promise<AuthResult>} [authenticatePlayer]
  */
 
 export class Main {
@@ -27,6 +52,7 @@ export class Main {
 		hooks,
 	}) {
 		this.hooks = hooks;
+		this.serverId = getEnv("GAMESERVER_ID") ?? null;
 		this.applicationLoop = new ApplicationLoop(this);
 		this.game = new Game(this.applicationLoop, this, {
 			arenaWidth,
@@ -36,6 +62,15 @@ export class Main {
 			gameMode,
 		});
 		this.websocketManager = new WebSocketManager(this, this.game);
+		this.lobbyManager = new LobbyManager(this, {
+			minPlayers: parseInt(getEnv("SPACEBEE_LOBBY_MIN_PLAYERS") ?? "4", 10) || 4,
+			maxPlayers: parseInt(getEnv("SPACEBEE_LOBBY_MAX_PLAYERS") ?? "8", 10) || 8,
+			countdownMs: parseInt(getEnv("SPACEBEE_LOBBY_COUNTDOWN_MS") ?? "3000", 10) || 3000,
+		});
+		this.botManager = new BotManager(this);
+		this.applicationLoop.onSlowTickEnded(() => {
+			this.botManager.loop(performance.now());
+		});
 		this.game.onPlayerCountChange((playerCount) => {
 			this.websocketManager.notifyControlSocketsPlayerCount(playerCount);
 		});

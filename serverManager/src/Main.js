@@ -4,6 +4,7 @@ import { LegacyServerManager } from "./LegacyServerManager.js";
 import { PersistentStorage } from "./PersistentStorage.js";
 import { ServerManager } from "./ServerManager.js";
 import { AdminWebSocketManager } from "./AdminWebSocketManager.js";
+import { PaymentServiceBridge } from "./PaymentServiceBridge.js";
 
 export class Main {
 	/**
@@ -14,6 +15,14 @@ export class Main {
 	constructor({ persistentStoragePath, websocketAuthToken }) {
 		this.persistentStorage = new PersistentStorage(persistentStoragePath);
 		this.leaderboardManager = new LeaderboardManager(this.persistentStorage);
+		const paymentServiceUrl =
+			typeof Deno != "undefined" && "env" in Deno ? Deno.env.get("PAYMENT_SERVICE_URL") ?? undefined : undefined;
+		const paymentServiceToken =
+			typeof Deno != "undefined" && "env" in Deno ? Deno.env.get("PAYMENT_SERVICE_TOKEN") ?? undefined : undefined;
+		this.paymentServiceBridge = new PaymentServiceBridge({
+			baseUrl: paymentServiceUrl,
+			authToken: paymentServiceToken,
+		});
 		this.servermanager = new ServerManager(this);
 		this.legacyServerManager = new LegacyServerManager(this);
 		this.adminWebsocketManager = new AdminWebSocketManager(this, websocketAuthToken);

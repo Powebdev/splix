@@ -3,6 +3,35 @@ import { WebSocketConnection } from "./WebSocketConnection.js";
 import { WebSocketHoster } from "./util/WebSocketHoster.js";
 import { SocketRateLimiter } from "./util/SocketRateLimiter.js";
 
+/**
+ * @typedef {object} KillEventPayload
+ * @property {number | null} killerTelegramId
+ * @property {string | null} killerUserId
+ * @property {number | null} victimTelegramId
+ * @property {string | null} victimUserId
+ * @property {boolean} victimHasExtraLife
+ * @property {boolean} victimIsBot
+ * @property {string | null} depositTier
+ * @property {string} occurredAt
+ * @property {string | null} serverId
+ * @property {string | null} matchId
+ */
+
+/**
+ * @typedef {object} SessionEndPayload
+ * @property {number | null} userTelegramId
+ * @property {string | null} userId
+ * @property {string | null} serverId
+ * @property {string | null} matchId
+ * @property {string | null} depositTier
+ * @property {number} kills
+ * @property {number} maxTiles
+ * @property {number} capturedTiles
+ * @property {number} timeAliveSeconds
+ * @property {string} startedAt
+ * @property {string} endedAt
+ */
+
 export class WebSocketManager {
 	#hoster;
 
@@ -106,6 +135,34 @@ export class WebSocketManager {
 	notifyControlSocketsPlayerScore(score) {
 		for (const connection of this.#controlSocketConnections()) {
 			connection.messenger.send.reportPlayerScore(score);
+		}
+	}
+
+	/**
+	 * @param {KillEventPayload} event
+	 */
+	notifyControlSocketsKillEvent(event) {
+		for (const connection of this.#controlSocketConnections()) {
+			const promise = connection.messenger.send.reportKillEvent(event);
+			if (promise && typeof promise.catch == "function") {
+				promise.catch((error) => {
+					console.error("Failed to send kill event to control socket", error);
+				});
+			}
+		}
+	}
+
+	/**
+	 * @param {SessionEndPayload} event
+	 */
+	notifyControlSocketsSessionEnd(event) {
+		for (const connection of this.#controlSocketConnections()) {
+			const promise = connection.messenger.send.reportSessionEnd(event);
+			if (promise && typeof promise.catch == "function") {
+				promise.catch((error) => {
+					console.error("Failed to send session end event to control socket", error);
+				});
+			}
 		}
 	}
 
