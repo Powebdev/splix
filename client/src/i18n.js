@@ -15,6 +15,10 @@ const translations = {
 		"form.loading": "Loading...",
 		"form.join": "Join",
 		
+		// Lobby
+		"lobby.waiting": "Waiting for players...",
+		"lobby.cancel": "Cancel",
+		
 		// Stats
 		"stats.lastGame": "Last game",
 		"stats.bestGame": "Best game",
@@ -61,7 +65,6 @@ const translations = {
 		"news.recentUpdates": "Recent updates!",
 		"news.spectatorMode": "Spectator mode",
 		"news.spectatorModeDesc": "You can now spectate games using the 'spectator mode' toggle in the top right. Check it out! To toggle visibility of other spectators, you can press the 'm' key. Many thanks to {link} for this feature!",
-		"news.pelicanParty": "Pelican Party+",
 		"news.globalLeaderboards": "Global leaderboards",
 		"news.serverSelection": "Server selection",
 		"news.newServerRewrite": "New server rewrite",
@@ -126,6 +129,10 @@ const translations = {
 		"form.loading": "Загрузка...",
 		"form.join": "Присоединиться",
 		
+		// Lobby
+		"lobby.waiting": "Ожидание игроков...",
+		"lobby.cancel": "Отмена",
+		
 		// Stats
 		"stats.lastGame": "Последняя игра",
 		"stats.bestGame": "Лучшая игра",
@@ -172,7 +179,6 @@ const translations = {
 		"news.recentUpdates": "Последние обновления!",
 		"news.spectatorMode": "Режим наблюдателя",
 		"news.spectatorModeDesc": "Теперь вы можете наблюдать за играми, используя переключатель 'режим наблюдателя' в правом верхнем углу. Попробуйте! Чтобы переключить видимость других наблюдателей, нажмите клавишу 'm'. Большое спасибо {link} за эту функцию!",
-		"news.pelicanParty": "Pelican Party+",
 		"news.globalLeaderboards": "Глобальные таблицы лидеров",
 		"news.serverSelection": "Выбор сервера",
 		"news.newServerRewrite": "Новая переработка сервера",

@@ -621,16 +621,12 @@ export class Player {
 	}
 
 	get visibleSkinColorId() {
-		if (!this.#connection.plusSkinsAllowed && this.#skinColorId > FREE_SKIN_COLOR_COUNT) {
-			return this.#fallbackSkinColorId;
-		}
+		// All skins are now free - return the selected color
 		return this.#skinColorId;
 	}
 
 	get visibleSkinPatternId() {
-		if (!this.#connection.plusSkinsAllowed && PAID_SKIN_PATTERN_IDS.includes(this.#skinPatternId)) {
-			return 0;
-		}
+		// All skins are now free - return the selected pattern
 		return this.#skinPatternId;
 	}
 

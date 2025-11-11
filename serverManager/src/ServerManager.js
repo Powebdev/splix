@@ -46,7 +46,6 @@ export class ServerManager {
 		const server = new GameServer(
 			id,
 			this.#mainInstance.leaderboardManager,
-			this.#mainInstance.paymentServiceBridge,
 		);
 		this.#servers.set(id, server);
 		this.#mainInstance.adminWebsocketManager.sendAllServerConfigs();
@@ -118,7 +117,6 @@ export class ServerManager {
 				const server = new GameServer(
 					serverData.id,
 					this.#mainInstance.leaderboardManager,
-					this.#mainInstance.paymentServiceBridge,
 				);
 				this.#servers.set(serverData.id, server);
 				server.setConfig(serverData.config);

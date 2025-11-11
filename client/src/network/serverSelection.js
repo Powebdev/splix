@@ -1,11 +1,12 @@
 const serverSelectEl = /** @type {HTMLSelectElement} */ (document.getElementById("serverSelect"));
 export async function initServerSelection() {
 	let endPoint;
-	if (!IS_DEV_BUILD) {
-		endPoint = "https://splix.io/gameservers";
-	} else {
+	// Всегда используем локальный ServerManager, чтобы показывались только ваши сервера
+	{
 		const url = new URL(location.href);
 		url.pathname = "/servermanager/gameservers";
+		url.search = "";
+		url.hash = "";
 		endPoint = url.href;
 	}
 
@@ -68,10 +69,14 @@ export async function initServerSelection() {
 	if (officialGroup.childElementCount > 0) serverSelectEl.appendChild(officialGroup);
 	if (unofficialGroup.childElementCount > 0) serverSelectEl.appendChild(unofficialGroup);
 
-	serverSelectEl.selectedIndex = selectedEndpoint.index;
+	if (selectedEndpoint) {
+		serverSelectEl.value = selectedEndpoint.value;
+	}
 
 	serverSelectEl.disabled = false;
-	joinButton.disabled = false;
+	if (joinButton) {
+		joinButton.disabled = false;
+	}
 }
 
 export function getSelectedServer() {

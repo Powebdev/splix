@@ -201,6 +201,76 @@ body {
 	cursor: default;
 }
 
+/* Lobby waiting card styles */
+.lobbyCard {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 24px;
+	margin: 0 auto;
+	padding: 44px 40px 40px;
+	text-align: center;
+	width: min(480px, 95%);
+	box-sizing: border-box;
+	background: linear-gradient(140deg, #4a4a4a, #2d2d2d);
+	border-radius: 26px;
+	box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	backdrop-filter: blur(8px);
+}
+
+.lobbyCard h2 {
+	margin: 0;
+	color: white;
+	font-size: 24px;
+	font-weight: 600;
+}
+
+#lobbyPlayersIndicator {
+	display: flex;
+	gap: 20px;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.lobby-circle {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background-color: #666666;
+	border: 2px solid rgba(255, 255, 255, 0.2);
+	transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.lobby-circle.filled {
+	background-color: #28a548;
+	border-color: #3ddc6a;
+	animation: lobbyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes lobbyPulse {
+	0%, 100% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 rgba(40, 165, 72, 0.7);
+	}
+	50% {
+		transform: scale(1.1);
+		box-shadow: 0 0 0 8px rgba(40, 165, 72, 0);
+	}
+}
+
+.lobbyCancelBtn {
+	background: linear-gradient(135deg, #666666, #4a4a4a);
+	color: white;
+	margin-top: 8px;
+}
+
+.lobbyCancelBtn:hover:not(:disabled) {
+	background: linear-gradient(135deg, #777777, #5a5a5a);
+	filter: brightness(1.1);
+}
+
 #scoreBlock {
 	position: fixed;
 	padding: 4px;
@@ -380,6 +450,7 @@ a:hover {
 }
 
 #lastStats, #bestStats {
+	display: none !important;
 	color: inherit;
 }
 

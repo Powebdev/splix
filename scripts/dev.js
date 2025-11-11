@@ -34,11 +34,6 @@ downloadNpmPackage({
 	package: "@adlad/plugin-adinplay@0.0.3",
 	destination: "./deps/adlad-plugin-adinplay/0.0.3",
 });
-await ensureDir("./deps/peliSdk/browserSdk");
-downloadFile({
-	url: "https://js.pelicanparty.games/types/v0.9.d.ts",
-	destination: "./deps/peliSdk/browserSdk/0.9.d.ts",
-});
 
 generateTypes({
 	include: [
@@ -72,9 +67,6 @@ if (!Deno.args.includes("--no-init")) {
 		pitHeight: 16,
 		gameMode: "default",
 		hooks: {
-			peliAuthCodeReceived(connection, code) {
-				connection.plusSkinsAllowed = true;
-			},
 			async authenticatePlayer({ token }) {
 				const safeToken = typeof token == "string" && token.length > 0 ? token : crypto.randomUUID();
 				return {
@@ -104,7 +96,7 @@ if (!Deno.args.includes("--no-init")) {
 
 	/** Directories that should be served using serveDir() */
 	const serveRootDirs = [
-		"adminpanel",
+		"adminPanel",
 		"shared",
 		"deps",
 		"client",
@@ -115,38 +107,7 @@ if (!Deno.args.includes("--no-init")) {
 	}, async (request, info) => {
 		const url = new URL(request.url);
 		if (url.pathname == "/") {
-			return new Response(
-				`
-				<!DOCTYPE html>
-				<html>
-					<head>
-						<style>
-							* {
-								font-family: Arial, Helvetica, sans-serif;
-							}
-						</style>
-					</head>
-					<body>
-						<h1>Local Splix server</h1>
-						<p>Available endpoints:
-							<ul>
-								<li><a href="/client/">/client/</a> - The splix client.</li>
-								<li><a href="/client/flags.html">/client/flags.html</a> - Client flags for debugging etc.</li>
-								<li>/gameserver - The gameserver, <a href="/client/#ip=ws://localhost:8080/gameserver">click here to connect to it using a client</a></li>
-								<li><a href="/adminpanel/">/adminpanel/</a> - Admin panel for server management.</li>
-								<li>/servermanager/ - Hosts several endpoints for servermanagement.</li>
-								<li><a href="/servermanager/gameservers">/servermanager/gameservers</a> - Endpoint which can be used by clients to list available servers.</li>
-							</ul>
-						</p>
-					</body>
-				</html>
-			`,
-				{
-					headers: {
-						"Content-Type": "text/html",
-					},
-				},
-			);
+			return Response.redirect(new URL("/client/", request.url), 302);
 		} else if (url.pathname == "/gameserver") {
 			return gameServer.websocketManager.handleRequest(request, info);
 		} else if (url.pathname.startsWith("/servermanagerToken")) {

@@ -29,7 +29,6 @@ import { WebSocketManager } from "./WebSocketManager.js";
 
 /**
  * @typedef GameServerHooks
- * @property {(connection: WebSocketConnection, code: string) => void} [peliAuthCodeReceived]
  * @property {(context: AuthContext) => Promise<AuthResult>} [authenticatePlayer]
  */
 

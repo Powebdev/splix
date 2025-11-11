@@ -6,7 +6,6 @@
 		<meta content="utf-8" http-equiv="encoding">
 		<link rel="stylesheet" href="./static/style.css" />
 		<script type="module" src="./src/i18n.js"></script>
-		<script type="module" src="./src/main.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no" />
 		<meta
 			name="description"
@@ -81,6 +80,56 @@
 		>
 		<meta name="twitter:image" content="http://splix.io/static/img/fbthumb.png">
 		<meta name="apple-itunes-app" content="app-id=1150901618">
+		<script>
+			(function () {
+				function isRunningInTelegramMiniApp() {
+					try {
+						var tg = window.Telegram && window.Telegram.WebApp;
+						var url = new URL(window.location.href);
+						var ua = navigator.userAgent || "";
+						var hasTgParams = url.searchParams.has("tgWebAppData") || url.searchParams.has("tgWebAppPlatform");
+						return Boolean(tg) || ua.indexOf("Telegram") !== -1 || hasTgParams;
+					} catch (_) {
+						return false;
+					}
+				}
+				function isLocalDev() {
+					try {
+						var host = window.location.hostname;
+						if (host === "localhost" || host === "127.0.0.1") return true;
+						// allow explicit override for testing outside Telegram
+						return new URL(window.location.href).searchParams.get("allowWeb") === "1";
+					} catch (_) {
+						return false;
+					}
+				}
+				var allowed = isRunningInTelegramMiniApp() || isLocalDev();
+				if (allowed) {
+					var s = document.createElement("script");
+					s.type = "module";
+					s.src = "./src/main.js";
+					document.head.appendChild(s);
+				} else {
+					window.addEventListener("DOMContentLoaded", function () {
+						var style = document.createElement("style");
+						style.textContent = [
+							"html,body{height:100%;margin:0;padding:0;background:#0b0f10;color:#fff;font-family:Arial,Helvetica,sans-serif;}",
+							".blocked{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;}",
+							".card{max-width:640px;background:#11181c;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,0.3)}",
+							".title{font-size:20px;margin:0 0 8px 0}",
+							".desc{opacity:0.85;line-height:1.5;margin:0}",
+							".hint{opacity:0.6;font-size:14px;margin-top:12px}"
+						].join("");
+						document.head.appendChild(style);
+						var root = document.createElement("div");
+						root.className = "blocked";
+						root.innerHTML = '<div class="card"><h1 class="title">Игра доступна только в Telegram Mini App</h1><p class="desc">Откройте игру через Telegram, чтобы продолжить. Если вы разработчик, добавьте параметр <code>?allowWeb=1</code> к URL для локального теста.</p><p class="hint">Подсказка: откройте бота/мини‑приложение в Telegram и перейдите по ссылке на игру из него.</p></div>';
+						document.body.innerHTML = "";
+						document.body.appendChild(root);
+					});
+				}
+			})();
+		</script>
 	</head>
 	<body ontouchstart="">
 		<div id="touchControls" style="display: none"></div>
@@ -88,16 +137,6 @@
 			<canvas id="logoCanvas"></canvas>
 			<br>
 			<div id="notification" style="display: none"></div>
-			<div class="player-stats">
-				<div id="lastStats" class="stat-card">
-					<div id="lastStatsLeft" class="stat-card__label" data-i18n="stats.lastGame">Last game</div>
-					<div id="lastStatsRight" class="stat-card__value"></div>
-				</div>
-				<div id="bestStats" class="stat-card">
-					<div id="bestStatsLeft" class="stat-card__label" data-i18n="stats.bestGame">Best game</div>
-					<div id="bestStatsRight" class="stat-card__value"></div>
-				</div>
-			</div>
 			<main id="mainMenu">
 				<div id="adboxContainer" class="fancyBox greenBox" style="display: none">
 					<button class="remove-ads-button" data-i18n="ads.removeAds">Don't want to see ads?</button>
@@ -119,6 +158,16 @@
 						</select>
 						<input type="submit" disabled class="fancyBox fancyBtn" id="joinButton" value="Join" data-i18n="form.join" />
 					</form>
+					<div id="lobbyWaitingCard" class="fancyBox lobbyCard" style="display: none">
+						<h2 data-i18n="lobby.waiting">Waiting for players...</h2>
+						<div id="lobbyPlayersIndicator">
+							<div class="lobby-circle"></div>
+							<div class="lobby-circle"></div>
+							<div class="lobby-circle"></div>
+							<div class="lobby-circle"></div>
+						</div>
+						<button id="lobbyCancelButton" class="fancyBox fancyBtn lobbyCancelBtn" data-i18n="lobby.cancel">Cancel</button>
+					</div>
 					<div id="tutorialText" style="opacity: 0"></div>
 					<canvas id="tutorialCanvas" width="300" height="300"></canvas>
 				</div>
@@ -130,29 +179,6 @@
 						toggle visibility of other spectators, you can press the 'm' key. Many thanks to <a
 							href="https://github.com/jespertheend/splix/releases/tag/v0.19.0"
 						>our contributors</a> for this feature!
-					</p>
-					<h3><peli-plus-icon></peli-plus-icon> Pelican Party+</h3>
-					<p>
-						Patreon support has been in a broken state for years now, so this month it was finally removed
-						for good. But not to worry, you can still support the development of our games!
-					</p>
-					<p>
-						I've been working on a subscription called 'Pelican Party Plus' for the games I develop with a
-						friend, so I decided to use it for splix as well.
-					</p>
-					<p>
-						If you subscribe, you'll receive perks in our <a
-							href="https://pelicanparty.games"
-							target="_blank"
-						>other games</a> as well as in splix. Perks differ from game to game, but for splix you'll
-						disable ads and unlock a custom skin and color.
-					</p>
-					<p>
-						If you'd like to support us, <a
-							href="https://pelicanparty.games/subscribe"
-							target="_blank"
-							class="support-us-link"
-						>please click here.</a>
 					</p>
 					<h3>Global leaderboards</h3>
 					<p>

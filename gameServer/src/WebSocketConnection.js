@@ -211,10 +211,6 @@ export class WebSocketConnection {
 			PATREON_CODE: 12,
 			PROTOCOL_VERSION: 13,
 			/**
-			 * A peli sdk auth code which is used to determine which skins a player is allowed to use.
-			 */
-			PELI_AUTH_CODE: 14,
-			/**
 			 * Lets the server know if the player is using spectator mode.
 			 */
 			SPECTATOR_MODE: 15,
@@ -361,12 +357,6 @@ export class WebSocketConnection {
 			let honkDuration = view.getUint8(1);
 			honkDuration = Math.max(honkDuration, 70);
 			this.#player.honk(honkDuration);
-		} else if (messageType == WebSocketConnection.ReceiveAction.PELI_AUTH_CODE) {
-			const code = this.#parseBinaryStringMessage(data);
-			if (!code) return;
-			const { hooks } = this.#mainInstance;
-			if (!hooks) return;
-			hooks.peliAuthCodeReceived(this, code);
 		} else if (messageType == WebSocketConnection.ReceiveAction.SPECTATOR_MODE) {
 			if (this.#player) return;
 			if (view.byteLength != 2) return;

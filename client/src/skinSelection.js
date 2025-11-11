@@ -9,14 +9,10 @@ import {
 	hideBeginScreen,
 	showBeginScreen,
 } from "./main.js";
-import { getAssertedPeliSdk, getPeliSdkAsync, hasPlusRewards } from "./peliSdk.js";
 import { lsSet, mod } from "./util.js";
 
 let skinButtonCanvas, skinButtonCtx, skinButtonBlocks = [];
 let skinCanvas, skinCtx, skinScreen, skinScreenVisible = false, skinScreenBlocks;
-
-const LOCKED_COLOR_IDS = [13];
-const LOCKED_PATTERN_IDS = [27];
 
 /**
  * @param {string} key
@@ -92,14 +88,7 @@ export async function initSkinScreen() {
 		skinButton(1, 1);
 	};
 	document.getElementById("skinSave").onclick = function () {
-		if (
-			!hasPlusRewards() &&
-			(LOCKED_COLOR_IDS.includes(selectedColor) || LOCKED_PATTERN_IDS.includes(selectedPattern))
-		) {
-			getAssertedPeliSdk().subscription.showSubscribeModal({ flow: "unlockItem" });
-		} else {
-			doTransition("", false, showBeginHideSkin);
-		}
+		doTransition("", false, showBeginHideSkin);
 	};
 
 	var block = getBlock(0, 0, skinButtonBlocks);
@@ -113,13 +102,6 @@ export async function initSkinScreen() {
 	skinButtonCanvas.onmouseout = function () {
 		skinButtonBlocks[0].setBlockId(selectedColor + 1, false);
 	};
-
-	const sdk = await getPeliSdkAsync();
-	if (sdk) {
-		sdk.entitlements.onChange(() => {
-			updateSkinLockIcons();
-		});
-	}
 }
 
 export function renderSkinButton() {
@@ -221,13 +203,9 @@ const colorLockIcon = document.getElementById("colorLockIcon");
 const patternLockIcon = document.getElementById("patternLockIcon");
 
 function updateSkinLockIcons() {
-	const colorPlusVisible = LOCKED_COLOR_IDS.includes(selectedColor);
-	colorPlusIcon.style.display = colorPlusVisible ? "" : "none";
-	const colorLockVisible = !hasPlusRewards() && colorPlusVisible;
-	colorLockIcon.style.display = colorLockVisible ? "" : "none";
-
-	const patternPlusVisible = LOCKED_PATTERN_IDS.includes(selectedPattern);
-	patternPlusIcon.style.display = patternPlusVisible ? "" : "none";
-	const patternLockVisible = !hasPlusRewards() && patternPlusVisible;
-	patternLockIcon.style.display = patternLockVisible ? "" : "none";
+	// All skins are now free, so hide all lock icons
+	colorPlusIcon.style.display = "none";
+	colorLockIcon.style.display = "none";
+	patternPlusIcon.style.display = "none";
+	patternLockIcon.style.display = "none";
 }

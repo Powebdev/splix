@@ -13,7 +13,6 @@ import {
 import "./globals.js";
 import { getSelectedServer, initServerSelection } from "./network/serverSelection.js";
 import { getSpectatorIcon } from "./rendering/spectatorIcons.js";
-import { getPeliAuthCode, initPeliSdk } from "./peliSdk.js";
 import {
 	getSkinColor,
 	getSkinPattern,
@@ -81,6 +80,18 @@ var DeviceTypes = {
 	IOS: 1,
 	ANDROID: 2,
 };
+
+function isRunningInTelegramMiniApp() {
+	try {
+		var tg = window.Telegram && window.Telegram.WebApp;
+		var url = new URL(window.location.href);
+		var ua = navigator.userAgent || "";
+		var hasTgParams = url.searchParams.has("tgWebAppData") || url.searchParams.has("tgWebAppPlatform");
+		return Boolean(tg) || ua.indexOf("Telegram") !== -1 || hasTgParams;
+	} catch (_) {
+		return false;
+	}
+}
 
 var deviceType = (function () {
 	if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
@@ -233,28 +244,22 @@ var lastMyPosSetClientSideTime = 0,
 	lastMyPosHasBeenConfirmed = false;
 var uiElems = [], zoom, myColorId, uglyMode, spectatorMode = false;
 var hasReceivedChunkThisGame = false, didSendSecondReady = false;
-var lastStatBlocks = 0,
-	lastStatKills = 0,
-	lastStatLbRank = 0,
-	lastStatAlive = 0,
-	lastStatNo1Time = 0,
-	lastStatDeathType = 0,
-	lastStatKiller = "";
-var bestStatBlocks = 0, bestStatKills = 0, bestStatLbRank = 0, bestStatAlive = 0, bestStatNo1Time = 0;
-var lastStatTimer = 0, lastStatCounter = 0, lastStatValueElem, bestStatValueElem;
 var lastMousePos = [0, 0], mouseHidePos = [0, 0];
 var joinButton,
 	gamemodeDropDownEl;
 var didConfirmOpenInApp = false;
+var lobbyWaitingCard, lobbyPlayersIndicator, lobbyCancelButton;
+var lobbyState = {
+	waitingCount: 0,
+	activeCount: 0,
+	state: "idle",
+	minPlayers: 4,
+	maxPlayers: 8,
+	hasLobbyManager: false, // Track if we've received LOBBY_STATUS
+};
 
 (async () => {
-	const peliSdk = await initPeliSdk();
-	updateAdlad(peliSdk);
-	if (peliSdk) {
-		peliSdk.entitlements.onChange(() => {
-			updateAdlad(peliSdk);
-		});
-	}
+	updateAdlad(null);
 })();
 
 var receiveAction = {
@@ -301,7 +306,6 @@ var sendAction = {
 	 */
 	PATREON_CODE: 12,
 	PROTOCOL_VERSION: 13,
-	PELI_AUTH_CODE: 14,
 	SPECTATOR_MODE: 15,
 };
 
@@ -1057,13 +1061,6 @@ function sendSkin() {
 	});
 }
 
-async function sendPeliCode() {
-	const code = await getPeliAuthCode();
-	if (!code) return;
-
-	wsSendMsg(sendAction.PELI_AUTH_CODE, code);
-}
-
 function parseDirKey(c) {
 	var pd = false;
 	//up
@@ -1309,13 +1306,14 @@ window.onload = function () {
 	tutorialText = document.getElementById("tutorialText");
 	touchControlsElem = document.getElementById("touchControls");
 	notificationElem = document.getElementById("notification");
-	lastStatValueElem = document.getElementById("lastStatsRight");
-	bestStatValueElem = document.getElementById("bestStatsRight");
 	joinButton = document.getElementById("joinButton");
 	qualityText = document.getElementById("qualityText");
 	uglyText = document.getElementById("uglyText");
 	spectatorText = document.getElementById("spectatorText");
 	lifeBox = document.getElementById("lifeBox");
+	lobbyWaitingCard = document.getElementById("lobbyWaitingCard");
+	lobbyPlayersIndicator = document.getElementById("lobbyPlayersIndicator");
+	lobbyCancelButton = document.getElementById("lobbyCancelButton");
 
 	window.onkeydown = function (e) {
 		var c = e.keyCode;
@@ -1424,6 +1422,11 @@ window.onload = function () {
 	setQuality();
 	setUglyText();
 	setSpectatorText();
+	
+	//lobby cancel button
+	if (lobbyCancelButton) {
+		lobbyCancelButton.onclick = cancelLobbyWaiting;
+	}
 
 	// Menu toggle
 	var menuToggle = document.getElementById("menuToggle");
@@ -1479,11 +1482,6 @@ window.onload = function () {
 	setLeaderboardVisibility();
 
 	//best stats
-	bestStatBlocks = Math.max(bestStatBlocks, localStorage.getItem("bestStatBlocks"));
-	bestStatKills = Math.max(bestStatKills, localStorage.getItem("bestStatKills"));
-	bestStatLbRank = Math.max(bestStatLbRank, localStorage.getItem("bestStatLbRank"));
-	bestStatAlive = Math.max(bestStatAlive, localStorage.getItem("bestStatAlive"));
-	bestStatNo1Time = Math.max(bestStatNo1Time, localStorage.getItem("bestStatNo1Time"));
 
 	initServerSelection();
 
@@ -1505,20 +1503,32 @@ window.onload = function () {
 //when WebSocket connection is established
 function onOpen() {
 	isConnecting = false;
-	if (AUTH_TOKEN) {
-		try {
-			ws.send(JSON.stringify({ type: "AUTH", token: AUTH_TOKEN }));
-		} catch (error) {
-			console.error("Failed to send auth token", error);
+	try {
+		let tokenToSend = AUTH_TOKEN;
+		if (!tokenToSend || tokenToSend.length < 8) {
+			try {
+				tokenToSend = localStorage.getItem("guestToken") || "";
+			} catch {}
+			if (!tokenToSend || tokenToSend.length < 8) {
+				const rnd = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+				tokenToSend = "guest_" + rnd.slice(0, 16);
+				try { localStorage.setItem("guestToken", tokenToSend); } catch {}
+			}
 		}
+		ws.send(JSON.stringify({ type: "AUTH", token: tokenToSend }));
+	} catch (error) {
+		console.error("Failed to send auth token", error);
 	}
 	sendLegacyVersion();
 	sendProtocolVersion();
 	sendName();
-	sendPeliCode();
 	sendSkin();
 	sendSpectatorMode();
 	wsSendMsg(sendAction.READY);
+	
+	// Update lobby card when connection opens
+	updateLobbyCard();
+	
 	if (playingAndReady) {
 		onConnectOrMiddleOfTransition();
 	}
@@ -1582,10 +1592,21 @@ function showBeginHideMainCanvas() {
 }
 
 //when WebSocket connection is closed
-function onClose() {
+function onClose(evt) {
 	if (!!ws && ws.readyState == WebSocket.OPEN) {
 		ws.close();
 	}
+	ws = null;
+	isConnecting = false;
+	pendingTransition = false;
+	
+	// Reset lobby state
+	lobbyState.waitingCount = 0;
+	lobbyState.activeCount = 0;
+	lobbyState.state = "idle";
+	lobbyState.hasLobbyManager = false;
+	updateLobbyCard();
+	
 	if (!playingAndReady) {
 		if (!isTransitioning) {
 			if (couldntConnect()) {
@@ -1604,6 +1625,11 @@ function onClose() {
 		// ga("send","timing","Game","game_session_time", gameTime);
 		// _paq.push(['trackEvent', 'Game', 'game_session', 'time', gameTime]);
 	}
+	try {
+		if (evt && typeof evt.code !== "undefined") {
+			console.log("WebSocket closed", { code: evt.code, reason: evt.reason });
+		}
+	} catch {}
 	ws = null;
 	isConnecting = false;
 }
@@ -1621,6 +1647,100 @@ function couldntConnect() {
 
 //called by form, connects with transition and error handling
 var isConnectingWithTransition = false;
+var pendingTransition = false;
+var pendingTransitionShowAd = false;
+
+/**
+ * Update lobby card visibility and circle states
+ */
+function updateLobbyCard() {
+	if (!lobbyWaitingCard || !lobbyPlayersIndicator) return;
+	
+	var formElem = document.getElementById("nameForm");
+	var shouldShowCard = ws && lobbyState.waitingCount < lobbyState.minPlayers && 
+		lobbyState.state !== "active" && lobbyState.state !== "countdown";
+	
+	if (shouldShowCard) {
+		// Show card, hide form
+		lobbyWaitingCard.style.display = "flex";
+		if (formElem) formElem.style.display = "none";
+		
+		// Update circles
+		var circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
+		// Total players waiting/active (but show max 4 circles)
+		var totalPlayers = Math.min(lobbyState.waitingCount + lobbyState.activeCount, 4);
+		
+		for (var i = 0; i < circles.length; i++) {
+			if (i < totalPlayers) {
+				circles[i].classList.add("filled");
+			} else {
+				circles[i].classList.remove("filled");
+			}
+		}
+	} else {
+		// Hide card, show form if not in game
+		lobbyWaitingCard.style.display = "none";
+		if (formElem && beginScreenVisible) {
+			formElem.style.display = "flex";
+		}
+	}
+}
+
+/**
+ * Check if we can start transition now (when enough players joined)
+ */
+function checkAndStartTransition() {
+	if (pendingTransition && !isTransitioning) {
+		var canStart = lobbyState.waitingCount >= lobbyState.minPlayers || 
+			lobbyState.state === "active" || 
+			lobbyState.state === "countdown" ||
+			playingAndReady;
+		
+		if (canStart) {
+			pendingTransition = false;
+			doTransition("", false, function () {
+				if (!playingAndReady) {
+					isTransitioning = false;
+					// If READY hasn't arrived yet, wait for it
+					// The READY handler will call onConnectOrMiddleOfTransition when it arrives
+				} else {
+					// playingAndReady is true, proceed with transition
+					if (showCouldntConnectAfterTransition) {
+						couldntConnect();
+					} else {
+						onConnectOrMiddleOfTransition();
+					}
+				}
+				showCouldntConnectAfterTransition = false;
+			});
+		}
+	}
+}
+
+/**
+ * Cancel lobby waiting and return to form
+ */
+function cancelLobbyWaiting() {
+	if (ws) {
+		ws.close();
+		ws = null;
+	}
+	isConnecting = false;
+	isConnectingWithTransition = false;
+	pendingTransition = false;
+	
+	// Reset lobby state
+	lobbyState.waitingCount = 0;
+	lobbyState.activeCount = 0;
+	lobbyState.state = "idle";
+	lobbyState.hasLobbyManager = false;
+	
+	// Show form, hide card
+	updateLobbyCard();
+	var formElem = document.getElementById("nameForm");
+	if (formElem) formElem.style.display = "flex";
+}
+
 /**
  * @param {boolean} showFullScreenAd
  */
@@ -1628,17 +1748,18 @@ function connectWithTransition(showFullScreenAd) {
 	if (!isConnectingWithTransition) {
 		isConnectingWithTransition = true;
 		if (doConnect(showFullScreenAd)) {
-			doTransition("", false, function () {
-				if (!playingAndReady) {
-					isTransitioning = false;
+			// Don't start transition immediately - wait for enough players
+			pendingTransition = true;
+			pendingTransitionShowAd = showFullScreenAd;
+			
+			// Check if we can start immediately (if no lobby manager)
+			// If no LOBBY_STATUS received within 200ms, assume no lobby system
+			setTimeout(function() {
+				if (pendingTransition && !lobbyState.hasLobbyManager) {
+					checkAndStartTransition();
 				}
-				if (showCouldntConnectAfterTransition) {
-					couldntConnect();
-				} else {
-					onConnectOrMiddleOfTransition();
-				}
-				showCouldntConnectAfterTransition = false;
-			});
+			}, 200);
+			
 			nameInput.blur();
 			checkUsername(nameInput.value);
 		}
@@ -1697,6 +1818,42 @@ async function doConnect(showFullScreenAdBeforeConnect) {
 function onMessage(evt) {
 	// console.log(evt);
 	var x, y, type, id, player, w, h, block, i, j, nameBytes;
+	
+	// Handle JSON messages (like AUTH_OK, AUTH_ERROR, LOBBY_STATUS)
+	if (typeof evt.data === "string") {
+		try {
+			var jsonMsg = JSON.parse(evt.data);
+			if (jsonMsg.type === "AUTH_OK") {
+				// Authentication successful, server will send READY message next
+				return;
+			}
+			if (jsonMsg.type === "AUTH_ERROR") {
+				console.error("Authentication error:", jsonMsg.reason || "Unknown error");
+				onClose();
+				return;
+			}
+			if (jsonMsg.type === "LOBBY_STATUS") {
+				// Update lobby state
+				lobbyState.hasLobbyManager = true;
+				lobbyState.waitingCount = jsonMsg.waitingCount || 0;
+				lobbyState.activeCount = jsonMsg.activeCount || 0;
+				lobbyState.state = jsonMsg.state || "idle";
+				lobbyState.minPlayers = jsonMsg.minPlayers || 4;
+				lobbyState.maxPlayers = jsonMsg.maxPlayers || 8;
+				
+				// Update UI
+				updateLobbyCard();
+				
+				// Check if we can start transition now
+				checkAndStartTransition();
+				
+				return;
+			}
+		} catch (e) {
+			// Not valid JSON, continue with binary processing
+		}
+	}
+	
 	var data = new Uint8Array(evt.data);
 	// console.log(evt.data);
 	// for(var key in receiveAction){
@@ -2006,54 +2163,6 @@ function onMessage(evt) {
 		mapSize = bytesToInt(data[1], data[2]);
 	}
 	if (data[0] == receiveAction.YOU_DED) {
-		if (data.length > 1) {
-			lastStatBlocks = bytesToInt(data[1], data[2], data[3], data[4]);
-			if (lastStatBlocks > bestStatBlocks) {
-				bestStatBlocks = lastStatBlocks;
-				lsSet("bestStatBlocks", bestStatBlocks);
-			}
-			lastStatKills = bytesToInt(data[5], data[6]);
-			if (lastStatKills > bestStatKills) {
-				bestStatKills = lastStatKills;
-				lsSet("bestStatKills", bestStatKills);
-			}
-			lastStatLbRank = bytesToInt(data[7], data[8]);
-			if ((lastStatLbRank < bestStatLbRank || bestStatLbRank <= 0) && lastStatLbRank > 0) {
-				bestStatLbRank = lastStatLbRank;
-				lsSet("bestStatLbRank", bestStatLbRank);
-			}
-			lastStatAlive = bytesToInt(data[9], data[10], data[11], data[12]);
-			if (lastStatAlive > bestStatAlive) {
-				bestStatAlive = lastStatAlive;
-				lsSet("bestStatAlive", bestStatAlive);
-			}
-			lastStatNo1Time = bytesToInt(data[13], data[14], data[15], data[16]);
-			if (lastStatNo1Time > bestStatNo1Time) {
-				bestStatNo1Time = lastStatNo1Time;
-				lsSet("bestStatNo1Time", bestStatNo1Time);
-			}
-			lastStatDeathType = data[17];
-			lastStatKiller = "";
-			document.getElementById("lastStats").style.display = null;
-			document.getElementById("bestStats").style.display = null;
-			lastStatCounter = 0;
-			lastStatTimer = 0;
-			lastStatValueElem.innerHTML = bestStatValueElem.innerHTML = "";
-			switch (lastStatDeathType) {
-				case 1:
-					if (data.length > 18) {
-						nameBytes = data.subarray(18, data.length);
-						lastStatKiller = Utf8ArrayToStr(nameBytes);
-					}
-					break;
-				case 2:
-					lastStatKiller = "the wall";
-					break;
-				case 3:
-					lastStatKiller = "yourself";
-					break;
-			}
-		}
 		closedBecauseOfDeath = true;
 		allowSkipDeathTransition = true;
 		refreshBanner();
@@ -2112,9 +2221,34 @@ function onMessage(evt) {
 	}
 	if (data[0] == receiveAction.READY) {
 		playingAndReady = true;
+		// Hide lobby card when game starts
+		updateLobbyCard();
+		// Check if we can start transition now
+		checkAndStartTransition();
+		
 		if (!isTransitioning) {
-			isTransitioning = true;
-			onConnectOrMiddleOfTransition();
+			// No transition in progress or transition completed
+			// If beginScreen is still visible, we need to transition to game
+			if (beginScreenVisible) {
+				// Only start transition if we're not waiting for more players
+				if (!pendingTransition || lobbyState.waitingCount >= lobbyState.minPlayers || 
+					lobbyState.state === "active" || lobbyState.state === "countdown") {
+					isTransitioning = true;
+					onConnectOrMiddleOfTransition();
+				}
+			} else {
+				// Already in game, just ensure we're ready
+				onConnectOrMiddleOfTransition();
+			}
+		} else {
+			// Transition is in progress
+			// The transition callback will check playingAndReady when it completes (at 0.5 progress)
+			// If callback already executed (transitionTimer >= 0.5) but beginScreen still visible,
+			// it means callback set isTransitioning=false because playingAndReady was false
+			// Now playingAndReady is true, so proceed to game
+			if (transitionTimer >= 0.5 && beginScreenVisible) {
+				onConnectOrMiddleOfTransition();
+			}
 		}
 	}
 	if (data[0] == receiveAction.PLAYER_HIT_LINE) {
@@ -2178,8 +2312,7 @@ function wsSendMsg(action, data) {
 			array.push(coordBytesY[1]);
 		}
 		if (
-			action == sendAction.SET_USERNAME || action == sendAction.SET_TEAM_USERNAME ||
-			action == sendAction.PELI_AUTH_CODE
+			action == sendAction.SET_USERNAME || action == sendAction.SET_TEAM_USERNAME
 		) {
 			utf8Array = toUTF8Array(data);
 			array.push.apply(array, utf8Array);
@@ -2314,6 +2447,9 @@ function initTitle() {
 }
 
 function testHashForMobile() {
+	if (isRunningInTelegramMiniApp()) {
+		return;
+	}
 	if (deviceType != DeviceTypes.DESKTOP) {
 		var hash = location.hash;
 		if (hash != "" && hash != "#pledged") {
@@ -4863,108 +4999,7 @@ function loop(timeStamp) {
 			renderSkinScreen();
 		}
 
-		//lastStats
-		if (beginScreenVisible) {
-			lastStatTimer += deltaTime;
-			t = lastStatTimer / 2000;
-			if (t > 1) {
-				lastStatTimer = 0;
-				lastStatCounter++;
-				if (lastStatCounter > 5) {
-					lastStatCounter = 0;
-				}
-
-				if (lastStatCounter === 0) {
-					if (lastStatNo1Time <= 0 && bestStatNo1Time <= 0) {
-						lastStatCounter++;
-					} else {
-						var lastNo1Time = parseTimeToString(lastStatNo1Time);
-						var bestNo1Time = parseTimeToString(bestStatNo1Time);
-						lastStatValueElem.innerHTML = translateWithFallback(
-							"stats.rankTime",
-							{ time: lastNo1Time },
-							lastNo1Time + " on #1",
-						);
-						bestStatValueElem.innerHTML = translateWithFallback(
-							"stats.rankTime",
-							{ time: bestNo1Time },
-							bestNo1Time + " on #1",
-						);
-					}
-				}
-				if (lastStatCounter == 1) {
-					if (lastStatKiller === "" && lastStatKiller.replace(/\s/g, "").length > 0) {
-						lastStatCounter++;
-					} else {
-						var killerName = filter(htmlEscape(lastStatKiller));
-						lastStatValueElem.innerHTML = translateWithFallback(
-							"stats.killedBy",
-							{ killer: killerName },
-							"killed by " + killerName,
-						);
-						bestStatValueElem.innerHTML = "";
-					}
-				}
-				if (lastStatCounter == 2) {
-					if (lastStatKills <= 0 && bestStatKills <= 0) {
-						lastStatCounter++;
-					} else {
-						var killsFallback = lastStatKills + " player" + (lastStatKills == 1 ? "" : "s") + " killed";
-						lastStatValueElem.innerHTML = translateCount("stats.kills", lastStatKills, killsFallback);
-						var bestKillsFallback = bestStatKills + " player" + (bestStatKills == 1 ? "" : "s") + " killed";
-						bestStatValueElem.innerHTML = translateCount("stats.kills", bestStatKills, bestKillsFallback);
-					}
-				}
-				if (lastStatCounter == 3) {
-					var aliveTime = parseTimeToString(lastStatAlive);
-					lastStatValueElem.innerHTML = translateWithFallback(
-						"stats.alive",
-						{ time: aliveTime },
-						aliveTime + " alive",
-					);
-					var bestAliveValue = Math.max(lastStatAlive, localStorage.getItem("bestStatAlive"));
-					var bestAliveTime = parseTimeToString(bestAliveValue);
-					bestStatValueElem.innerHTML = translateWithFallback(
-						"stats.alive",
-						{ time: bestAliveTime },
-						bestAliveTime + " alive",
-					);
-				}
-				if (lastStatCounter == 4) {
-					if (lastStatBlocks <= 0 && bestStatBlocks <= 0) {
-						lastStatCounter++;
-					} else {
-						var blocksFallback = lastStatBlocks + " block" + (lastStatBlocks == 1 ? "" : "s") + " captured";
-						lastStatValueElem.innerHTML = translateCount("stats.blocks", lastStatBlocks, blocksFallback);
-						var bestBlocksFallback =
-							bestStatBlocks + " block" + (bestStatBlocks == 1 ? "" : "s") + " captured";
-						bestStatValueElem.innerHTML = translateCount("stats.blocks", bestStatBlocks, bestBlocksFallback);
-					}
-				}
-				if (lastStatCounter == 5) {
-					if (lastStatLbRank <= 0 && bestStatLbRank <= 0) {
-						lastStatCounter = 0;
-					} else {
-						lastStatValueElem.innerHTML = lastStatLbRank == 0
-							? ""
-							: translateWithFallback(
-								"stats.highestRank",
-								{ rank: lastStatLbRank },
-								"#" + lastStatLbRank + " highest rank",
-							);
-						bestStatValueElem.innerHTML = bestStatLbRank == 0
-							? ""
-							: translateWithFallback(
-								"stats.highestRank",
-								{ rank: bestStatLbRank },
-								"#" + bestStatLbRank + " highest rank",
-							);
-					}
-				}
-			}
-			var speed = 5;
-			lastStatValueElem.style.opacity = bestStatValueElem.style.opacity = speed - Math.abs((t - 0.5) * speed * 2);
-		}
+		// removed last/best stats rendering
 
 		if (beginScreenVisible) {
 			if (Date.now() - lastNameChangeCheck > 1000) {
