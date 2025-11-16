@@ -5,6 +5,7 @@
 		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 		<meta content="utf-8" http-equiv="encoding">
 		<link rel="stylesheet" href="./static/leaderboards.css" />
+		<script type="module" src="./src/i18n.js"></script>
 		<script type="module" src="./src/leaderboards.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 		<meta
@@ -24,7 +25,7 @@
 	</head>
 	<body>
 		<div id="backButton">
-			<a class="nav-button" href="/">back</a>
+			<a id="pageBackButton" class="nav-button" href="/">back</a>
 		</div>
 		<div id="navBar">
 			<a class="nav-button" id="tilesButton" href="#tiles">Tiles captured</a>
@@ -41,5 +42,28 @@
 			<div class="boards-container" id="trailBoard" style="display: none"></div>
 			<div class="boards-container" id="timeAliveBoard" style="display: none"></div>
 		</div>
+		<script>
+			function setLeaderboardBackButton() {
+				var backButton = document.getElementById("pageBackButton");
+				if (!backButton) return;
+				// Force style to match skin screen back button
+				backButton.style.cssText = "position: fixed !important; top: 10px !important; left: 10px !important; z-index: 100 !important; background-color: #666666 !important; background: #666666 !important; color: white !important; border: none !important; border-radius: 6px !important; padding: 8px 16px !important; font-size: 14px !important; font-weight: 600 !important; cursor: pointer !important; text-decoration: none !important; display: inline-block !important; box-shadow: 1px 1px #444444, 2px 2px #444444, 3px 3px #444444, 5px 10px 30px rgba(0, 0, 0, 0.3) !important;";
+			}
+			function updateBackButtonText() {
+				var backButton = document.getElementById("pageBackButton");
+				if (!backButton) return;
+				var text = "Назад";
+				if (window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
+					var lang = window.i18n.getCurrentLanguage();
+					text = lang === "en" ? "Back" : "Назад";
+				}
+				backButton.textContent = text;
+			}
+			window.addEventListener("DOMContentLoaded", function () {
+				setLeaderboardBackButton();
+				updateBackButtonText();
+			});
+			document.addEventListener("languageChanged", updateBackButtonText);
+		</script>
 	</body>
 </html>

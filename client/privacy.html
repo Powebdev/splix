@@ -4,6 +4,7 @@
 		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 		<meta content="utf-8" http-equiv="encoding">
 		<title>splix.io - privacy policy</title>
+		<script type="module" src="./src/i18n.js"></script>
 		<link rel="icon" type="image/png" href="./static/img/favicon-196x196.png" sizes="196x196" />
 		<link rel="icon" type="image/png" href="./static/img/favicon-96x96.png" sizes="96x96" />
 		<link rel="icon" type="image/png" href="./static/img/favicon-32x32.png" sizes="32x32" />
@@ -26,6 +27,7 @@
 		</style>
 	</head>
 	<body>
+		<a id="pageBackButton" href="/">Назад</a>
 		<div id="content">
 			<h2>splix.io privacy policy</h2>
 
@@ -71,5 +73,27 @@
 				splix.io website.
 			</p>
 		</div>
+		<script>
+			function applyBackButtonStyle() {
+				var backButton = document.getElementById("pageBackButton");
+				if (!backButton) return;
+				backButton.style.cssText = "position: fixed !important; top: 10px !important; left: 10px !important; z-index: 100 !important; background-color: #666666 !important; background: #666666 !important; color: white !important; border: none !important; border-radius: 6px !important; padding: 8px 16px !important; font-size: 14px !important; font-weight: 600 !important; cursor: pointer !important; text-decoration: none !important; display: inline-block !important; box-shadow: 1px 1px #444444, 2px 2px #444444, 3px 3px #444444, 5px 10px 30px rgba(0, 0, 0, 0.3) !important;";
+			}
+			function updateBackButtonText() {
+				var backButton = document.getElementById("pageBackButton");
+				if (!backButton) return;
+				var text = "Назад";
+				if (window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
+					var lang = window.i18n.getCurrentLanguage();
+					text = lang === "en" ? "Back" : "Назад";
+				}
+				backButton.textContent = text;
+			}
+			window.addEventListener("DOMContentLoaded", function () {
+				applyBackButtonStyle();
+				updateBackButtonText();
+			});
+			document.addEventListener("languageChanged", updateBackButtonText);
+		</script>
 	</body>
 </html>
