@@ -5,6 +5,26 @@ html {
 html, body {
 	height: 100%;
 	margin: 0px;
+	width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+/* Support for Telegram WebApp fullscreen */
+@supports (height: 100dvh) {
+	html, body {
+		height: 100dvh;
+		width: 100dvw;
+		min-height: 100dvh;
+		min-width: 100dvw;
+	}
+}
+
+/* Support for iOS safe areas */
+@supports (padding: env(safe-area-inset-top)) {
+	html {
+		padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+	}
 }
 
 body {

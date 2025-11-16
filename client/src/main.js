@@ -1291,6 +1291,19 @@ function honkEnd() {
 
 //when page is finished loading
 window.onload = function () {
+	// Initialize Telegram WebApp if available
+	if (isRunningInTelegramMiniApp() && window.Telegram && window.Telegram.WebApp) {
+		const tg = window.Telegram.WebApp;
+		tg.ready();
+		tg.expand(); // Expand to full screen
+		// Disable closing confirmation
+		tg.enableClosingConfirmation = false;
+		// Set background color
+		tg.setBackgroundColor("#3a342f");
+		// Set header color
+		tg.setHeaderColor("#3a342f");
+	}
+
 	mainCanvas = document.getElementById("mainCanvas");
 	ctx = mainCanvas.getContext("2d");
 	minimapCanvas = document.getElementById("minimapCanvas");
