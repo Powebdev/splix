@@ -1302,6 +1302,16 @@ window.onload = function () {
 		tg.setBackgroundColor("#3a342f");
 		// Set header color
 		tg.setHeaderColor("#3a342f");
+		
+		// Enable vertical scrolling in Telegram
+		if (typeof tg.enableVerticalSwipes === 'function') {
+			tg.enableVerticalSwipes();
+		}
+		
+		// Additional fix for scrolling on iOS in Telegram
+		document.body.style.position = 'relative';
+		document.body.style.overflow = 'auto';
+		document.documentElement.style.overflow = 'auto';
 	}
 
 	mainCanvas = document.getElementById("mainCanvas");
@@ -3583,6 +3593,11 @@ function bindSwipeEvents() {
 }
 
 function onTouchStart(e) {
+	// Only handle touches when the game is active
+	if (touchControlsElem.style.display === "none" || !playingAndReady) {
+		return;
+	}
+	
 	var touch = e.touches[e.touches.length - 1];
 	currentTouches.push({
 		prevPos: [touch.pageX, touch.pageY],
@@ -3592,6 +3607,12 @@ function onTouchStart(e) {
 }
 
 function onTouchMove(e) {
+	// Only prevent default and handle touches when the game is active
+	// This allows native scrolling on menu screens
+	if (touchControlsElem.style.display === "none" || !playingAndReady) {
+		return;
+	}
+	
 	var touches = e.touches;
 	for (var i = 0; i < touches.length; i++) {
 		var touch = touches[i];

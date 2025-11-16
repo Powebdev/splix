@@ -3,20 +3,21 @@ html {
 }
 
 html, body {
-	height: 100%;
+	height: auto;
+	min-height: 100%;
 	margin: 0px;
 	width: 100%;
-	overflow: hidden;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
 	box-sizing: border-box;
+	position: relative;
 }
 
 /* Support for Telegram WebApp fullscreen */
 @supports (height: 100dvh) {
 	html, body {
-		height: 100dvh;
-		width: 100dvw;
 		min-height: 100dvh;
-		min-width: 100dvw;
+		width: 100dvw;
 	}
 }
 
@@ -44,6 +45,11 @@ body {
 
 #beginScreen {
 	text-align: center;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch;
+	min-height: 100vh;
+	width: 100%;
+	padding-bottom: 50px;
 }
 
 #title {
@@ -571,7 +577,11 @@ a:hover {
 }
 
 #skinScreen {
-	overflow: hidden;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch;
+	min-height: 100vh;
+	width: 100%;
+	padding-bottom: 50px;
 }
 
 #skinScreen .skinBackButton,
