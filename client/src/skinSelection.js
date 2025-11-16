@@ -90,6 +90,12 @@ export async function initSkinScreen() {
 	document.getElementById("skinSave").onclick = function () {
 		doTransition("", false, showBeginHideSkin);
 	};
+	document.getElementById("skinBackButton").onclick = function () {
+		doTransition("", false, showBeginHideSkin);
+	};
+
+	// Listen for language changes to update back button text
+	document.addEventListener("languageChanged", updateBackButtonText);
 
 	var block = getBlock(0, 0, skinButtonBlocks);
 	block.setBlockId(selectedColor + 1, false);
@@ -134,9 +140,33 @@ function showBeginHideSkin() {
 	hideSkinScreen();
 }
 
+function updateBackButtonText() {
+	const backButton = document.getElementById("skinBackButton");
+	if (!backButton) return;
+	
+	// Get localized text
+	let text = "Назад"; // Default Russian
+	if (window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
+		const lang = window.i18n.getCurrentLanguage();
+		text = lang === "en" ? "Back" : "Назад";
+	}
+	
+	backButton.textContent = text;
+}
+
 function showSkinScreen() {
 	skinScreenVisible = true;
 	skinScreen.style.display = null;
+	
+	// Force apply styles and text to back button (for Telegram Mini App compatibility)
+	const backButton = document.getElementById("skinBackButton");
+	if (backButton) {
+		// Force apply styles
+		backButton.style.cssText = "position: fixed !important; top: 10px !important; left: 10px !important; z-index: 100 !important; background-color: #666666 !important; background: #666666 !important; color: white !important; border: none !important; border-radius: 6px !important; padding: 8px 16px !important; font-size: 14px !important; font-weight: 600 !important; cursor: pointer !important; box-shadow: 1px 1px #444444, 2px 2px #444444, 3px 3px #444444, 5px 10px 30px rgba(0, 0, 0, 0.3) !important;";
+		
+		// Set text with localization
+		updateBackButtonText();
+	}
 }
 
 export function hideSkinScreen() {

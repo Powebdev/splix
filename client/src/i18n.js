@@ -56,6 +56,7 @@ const translations = {
 		"skin.color": "Color",
 		"skin.pattern": "Pattern",
 		"skin.save": "Save",
+		"skin.back": "Back",
 		"skin.title": "block customization",
 		
 		// Ads
@@ -170,6 +171,7 @@ const translations = {
 		"skin.color": "Цвет",
 		"skin.pattern": "Узор",
 		"skin.save": "Сохранить",
+		"skin.back": "Назад",
 		"skin.title": "настройка блока",
 		
 		// Ads

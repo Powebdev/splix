@@ -574,6 +574,40 @@ a:hover {
 	overflow: hidden;
 }
 
+#skinScreen .skinBackButton,
+#skinBackButton {
+	position: fixed !important;
+	top: 10px !important;
+	left: 10px !important;
+	z-index: 100 !important;
+	background-color: #666666 !important;
+	background: #666666 !important;
+	color: white !important;
+	border: none !important;
+	border-radius: 6px !important;
+	padding: 8px 16px !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	box-shadow: 1px 1px #444444, 2px 2px #444444, 3px 3px #444444, 5px 10px 30px rgba(0, 0, 0, 0.3) !important;
+	transition: background-color 0.2s, transform 0.1s !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+}
+
+#skinScreen .skinBackButton:hover,
+#skinBackButton:hover {
+	background-color: #777777 !important;
+	background: #777777 !important;
+}
+
+#skinScreen .skinBackButton:active,
+#skinBackButton:active {
+	transform: translate(2px, 2px) !important;
+	box-shadow: 0px 0px #333333 !important;
+}
+
 #skinButton {
 	position: fixed;
 	left: 20px;
