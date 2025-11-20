@@ -1,4 +1,5 @@
 import { BotConnection } from "./BotConnection.js";
+import { BotAI } from "./BotAI.js";
 
 const DIRECTIONS = ["up", "down", "left", "right"];
 
@@ -34,6 +35,9 @@ export class Bot {
 			auth,
 		});
 		this.#direction = this.#randomDirection();
+		
+		// Инициализируем улучшенный AI
+		this.#ai = new BotAI(this.#player, this.#mainInstance.game);
 	}
 
 	#id;
@@ -43,6 +47,7 @@ export class Bot {
 	#direction;
 	#lastDirectionChange = 0;
 	#markForRemoval = false;
+	#ai;
 
 	get player() {
 		return this.#player;
@@ -60,10 +65,10 @@ export class Bot {
 			this.#markForRemoval = true;
 			return;
 		}
-		if (now - this.#lastDirectionChange > 1_500) {
-			this.#direction = this.#randomDirection();
-			this.#lastDirectionChange = now;
-		}
+		
+		// Используем улучшенный AI для выбора направления
+		this.#direction = this.#ai.update(now);
+		
 		const pos = this.#player.getPosition();
 		this.#player.clientPosUpdateRequested(this.#direction, pos);
 	}
@@ -74,6 +79,7 @@ export class Bot {
 			this.#player = null;
 		}
 		this.#markForRemoval = true;
+		this.#ai = null;
 	}
 
 	#randomDirection() {

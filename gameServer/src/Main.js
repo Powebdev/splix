@@ -41,6 +41,9 @@ export class Main {
 	 * @param {number} [options.pitHeight] pit is specific to arena gamemode and refers to the thing in the middle of the arena.
 	 * @param {import("./gameplay/Game.js").GameModes} [options.gameMode]
 	 * @param {GameServerHooks} [options.hooks]
+	 * @param {number} [options.minPlayers]
+	 * @param {number} [options.maxPlayers]
+	 * @param {number} [options.countdownMs]
 	 */
 	constructor({
 		arenaWidth,
@@ -49,6 +52,9 @@ export class Main {
 		pitHeight = 16,
 		gameMode = "default",
 		hooks,
+		minPlayers,
+		maxPlayers,
+		countdownMs,
 	}) {
 		this.hooks = hooks;
 		this.serverId = getEnv("GAMESERVER_ID") ?? null;
@@ -62,9 +68,9 @@ export class Main {
 		});
 		this.websocketManager = new WebSocketManager(this, this.game);
 		this.lobbyManager = new LobbyManager(this, {
-			minPlayers: parseInt(getEnv("SPACEBEE_LOBBY_MIN_PLAYERS") ?? "4", 10) || 4,
-			maxPlayers: parseInt(getEnv("SPACEBEE_LOBBY_MAX_PLAYERS") ?? "8", 10) || 8,
-			countdownMs: parseInt(getEnv("SPACEBEE_LOBBY_COUNTDOWN_MS") ?? "3000", 10) || 3000,
+			minPlayers: minPlayers ?? (parseInt(getEnv("SPACEBEE_LOBBY_MIN_PLAYERS") ?? "4", 10) || 4),
+			maxPlayers: maxPlayers ?? (parseInt(getEnv("SPACEBEE_LOBBY_MAX_PLAYERS") ?? "8", 10) || 8),
+			countdownMs: countdownMs ?? (parseInt(getEnv("SPACEBEE_LOBBY_COUNTDOWN_MS") ?? "3000", 10) || 3000),
 		});
 		this.botManager = new BotManager(this);
 		this.applicationLoop.onSlowTickEnded(() => {

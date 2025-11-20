@@ -1512,11 +1512,39 @@ window.onload = function () {
 
 	//best stats
 
-	initServerSelection();
+	const serverSelectEl = document.getElementById("serverSelect");
+	const trainingBotSelectorEl = document.getElementById("trainingBotSelector");
+	const updateTrainingBotSelectorVisibility = (value) => {
+		if (!trainingBotSelectorEl) {
+			return;
+		}
+		const currentValue = value ?? (serverSelectEl ? serverSelectEl.value : "") ?? "";
+		const isTrainingServer = currentValue.includes("/gameserver-training");
+		trainingBotSelectorEl.style.display = isTrainingServer ? "block" : "none";
+	};
 
-	document.getElementById("serverSelect").addEventListener(
+	try {
+		const storedEndpoint = localStorage.getItem("lastSelectedEndpoint") || "";
+		if (storedEndpoint) {
+			updateTrainingBotSelectorVisibility(storedEndpoint);
+		}
+	} catch (error) {
+		console.warn("Failed to read lastSelectedEndpoint from localStorage", error);
+	}
+
+	initServerSelection()
+		.then(() => updateTrainingBotSelectorVisibility())
+		.catch((error) => {
+			console.error("Failed to init server selection", error);
+			updateTrainingBotSelectorVisibility();
+		});
+
+	serverSelectEl.addEventListener(
 		"change",
-		(e) => localStorage.setItem("lastSelectedEndpoint", e.target.value),
+		(e) => {
+			localStorage.setItem("lastSelectedEndpoint", e.target.value);
+			updateTrainingBotSelectorVisibility(e.target.value);
+		},
 	);
 
 	window.requestAnimationFrame(loop);
@@ -1606,6 +1634,8 @@ export function showBeginScreen() {
 	beginScreenVisible = true;
 	updateCmpPersistentLinkVisibility();
 	nameInput.focus();
+	// Убедимся, что форма отображается корректно (если мы не в лобби)
+	updateLobbyCard();
 }
 
 function hideMainCanvas() {
@@ -1620,7 +1650,7 @@ function showBeginHideMainCanvas() {
 	hideMainCanvas();
 }
 
-//when WebSocket connection is closed
+	//when WebSocket connection is closed
 function onClose(evt) {
 	if (!!ws && ws.readyState == WebSocket.OPEN) {
 		ws.close();
@@ -1635,6 +1665,16 @@ function onClose(evt) {
 	lobbyState.state = "idle";
 	lobbyState.hasLobbyManager = false;
 	updateLobbyCard();
+
+	// Обновляем селектор ботов, так как при закрытии соединения мы можем оказаться в меню
+	// и нужно убедиться, что UI соответствует выбранному серверу
+	const serverSelectEl = document.getElementById("serverSelect");
+	const trainingBotSelectorEl = document.getElementById("trainingBotSelector");
+	if (serverSelectEl && trainingBotSelectorEl) {
+		const currentValue = serverSelectEl.value || "";
+		const isTrainingServer = currentValue.includes("/gameserver-training");
+		trainingBotSelectorEl.style.display = isTrainingServer ? "block" : "none";
+	}
 	
 	if (!playingAndReady) {
 		if (!isTransitioning) {
@@ -1686,7 +1726,12 @@ function updateLobbyCard() {
 	if (!lobbyWaitingCard || !lobbyPlayersIndicator) return;
 	
 	var formElem = document.getElementById("nameForm");
-	var shouldShowCard = ws && lobbyState.waitingCount < lobbyState.minPlayers && 
+
+	// В тренировочном режиме лобби не должно показываться
+	const serverSelectEl = document.getElementById("serverSelect");
+	const isTraining = serverSelectEl && serverSelectEl.value && serverSelectEl.value.includes("/gameserver-training");
+
+	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < lobbyState.minPlayers && 
 		lobbyState.state !== "active" && lobbyState.state !== "countdown";
 	
 	if (shouldShowCard) {
@@ -1820,6 +1865,14 @@ async function doConnect(showFullScreenAdBeforeConnect) {
 			onClose();
 			return false;
 		}
+		
+		// Для тренировочного режима добавляем параметр количества ботов
+		if (server.includes("/gameserver-training")) {
+			const botCountSelect = document.getElementById("botCountSelect");
+			const botCount = botCountSelect ? botCountSelect.value : "2";
+			server = server + "?bots=" + botCount;
+		}
+		
 		thisServerAvgPing = thisServerLastPing = 0;
 		ws = new WebSocket(server);
 		ws.binaryType = "arraybuffer";

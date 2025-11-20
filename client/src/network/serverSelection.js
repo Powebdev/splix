@@ -71,6 +71,7 @@ export async function initServerSelection() {
 
 	if (selectedEndpoint) {
 		serverSelectEl.value = selectedEndpoint.value;
+		serverSelectEl.dispatchEvent(new Event("change", { bubbles: true }));
 	}
 
 	serverSelectEl.disabled = false;

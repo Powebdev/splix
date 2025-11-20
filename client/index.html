@@ -187,6 +187,15 @@
 						<select id="serverSelect" disabled class="fancyBox inputFancy">
 							<option data-i18n="form.loading">Loading...</option>
 						</select>
+						<div id="trainingBotSelector" style="display: none; margin-top: 10px;">
+							<label style="color: white; font-size: 14px; display: block; margin-bottom: 5px;">
+								Количество ботов:
+							</label>
+							<select id="botCountSelect" class="fancyBox inputFancy">
+								<option value="2">2 бота</option>
+								<option value="4">4 бота</option>
+							</select>
+						</div>
 						<input type="submit" disabled class="fancyBox fancyBtn" id="joinButton" value="Join" data-i18n="form.join" />
 					</form>
 					<div id="lobbyWaitingCard" class="fancyBox lobbyCard" style="display: none">

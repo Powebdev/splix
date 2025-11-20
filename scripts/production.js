@@ -2,6 +2,7 @@ import { serveDir } from "$std/http/file_server.ts";
 import { resolve } from "$std/path/mod.ts";
 import { setCwd } from "chdir-anywhere";
 import { init as initGameServer } from "../gameServer/src/mainInstance.js";
+import { init as initTrainingServer } from "../gameServer/src/trainingInstance.js";
 import { init as initServerManager } from "../serverManager/src/mainInstance.js";
 import "$std/dotenv/load.ts";
 import { ensureDir } from "$std/fs/mod.ts";
@@ -18,30 +19,59 @@ const publicScheme = Deno.env.get("PUBLIC_SCHEME") || "https";
 const persistentStoragePath = resolve("serverManager/persistentStorage.json");
 await ensureDir(resolve("serverManager"));
 
-// Инициализация игрового сервера
-const gameServer = initGameServer({
+// Общий auth hook для всех серверов
+const createAuthHook = () => ({
+	async authenticatePlayer({ token, ip }) {
+		// Разрешаем подключение всем игрокам, токен не обязателен.
+		const safeIp = typeof ip == "string" ? ip : "";
+		return {
+			success: true,
+			playerName: undefined, // клиент пришлёт имя отдельным сообщением
+			isSpectator: false,
+			hasExtraLife: false,
+			depositTier: 0,
+			userId: undefined,
+			telegramId: undefined,
+			metadata: token ? { token, ip: safeIp } : { ip: safeIp },
+		};
+	},
+});
+
+// Инициализация игрового сервера на 4 игрока (основной)
+const gameServer4Players = initGameServer({
 	arenaWidth: 40,
 	arenaHeight: 40,
 	pitWidth: 16,
 	pitHeight: 16,
 	gameMode: "default",
-	hooks: {
-		async authenticatePlayer({ token, ip }) {
-			// Разрешаем подключение всем игрокам, токен не обязателен.
-			// Можно расширить: валидация токена/Telegram позже.
-			const safeIp = typeof ip == "string" ? ip : "";
-			return {
-				success: true,
-				playerName: undefined, // клиент пришлёт имя отдельным сообщением
-				isSpectator: false,
-				hasExtraLife: false,
-				depositTier: 0,
-				userId: undefined,
-				telegramId: undefined,
-				metadata: token ? { token, ip: safeIp } : { ip: safeIp },
-			};
-		},
-	},
+	hooks: createAuthHook(),
+	minPlayers: 4,
+	maxPlayers: 4,
+	countdownMs: 3000,
+});
+
+// Инициализация игрового сервера на 2 игрока (дуэли)
+const gameServer2Players = initGameServer({
+	arenaWidth: 30,
+	arenaHeight: 30,
+	pitWidth: 12,
+	pitHeight: 12,
+	gameMode: "default",
+	hooks: createAuthHook(),
+	minPlayers: 2,
+	maxPlayers: 2,
+	countdownMs: 2000,
+});
+
+// Инициализация тренировочного сервера (персональные арены)
+// Использует TrainingMain вместо обычного Main - создаёт отдельную арену для каждого игрока
+const gameServerTraining = initTrainingServer({
+	arenaWidth: 35,
+	arenaHeight: 35,
+	pitWidth: 14,
+	pitHeight: 14,
+	gameMode: "default",
+	hooks: createAuthHook(),
 });
 
 // Инициализация server manager
@@ -50,43 +80,62 @@ const serverManager = initServerManager({
 	websocketAuthToken,
 });
 
-// Автоматическое создание игрового сервера при первом запуске, если его еще нет
-const protocol = Deno.env.get("PROTOCOL") || (hostname === "0.0.0.0" ? "ws" : "wss");
+// Автоматическое создание игровых серверов при первом запуске
+const protocol = Deno.env.get("PROTOCOL") || "wss"; // Всегда используем wss для production
 const domain = Deno.env.get("DOMAIN") || "space-bot.ru";
-const gameServerEndpoint = `${protocol}://${domain}/gameserver`;
 const publicBaseUrl = Deno.env.get("PUBLIC_URL") || `${publicScheme}://${domain}`;
+
+const gameServer4Endpoint = `${protocol}://${domain}/gameserver`;
+const gameServer2Endpoint = `${protocol}://${domain}/gameserver-duo`;
+const gameServerTrainingEndpoint = `${protocol}://${domain}/gameserver-training`;
 
 // Проверяем, есть ли уже серверы
 const serversJson = serverManager.servermanager.getServersJson();
 console.log(`Initial servers check: ${serversJson.servers.length} server(s) found`);
 
 if (serversJson.servers.length === 0) {
-	console.log("No game servers found. Creating default game server...");
+	console.log("No game servers found. Creating game servers...");
+	
+	// Создаём три сервера
+	serverManager.servermanager.createGameServer();
+	serverManager.servermanager.createGameServer();
 	serverManager.servermanager.createGameServer();
 	
-	// Настраиваем созданный сервер
 	const serverConfigs = serverManager.servermanager.getServerConfigs();
 	console.log(`Server configs after creation: ${serverConfigs.length}`);
 	
-	if (serverConfigs.length > 0) {
-		const serverId = serverConfigs[0].id;
-		console.log(`Configuring server ID: ${serverId} with endpoint: ${gameServerEndpoint}`);
-		
-		serverManager.servermanager.setGameServerConfig(serverId, {
+	if (serverConfigs.length >= 3) {
+		// Настраиваем сервер на 4 игрока (основной)
+		serverManager.servermanager.setGameServerConfig(serverConfigs[0].id, {
 			public: true,
 			official: true,
 			recommended: true,
-			needsControlSocket: false, // Отключаем control socket для первого запуска, чтобы избежать проблем с подключением
-			displayName: `${domain} Server`,
-			endpoint: gameServerEndpoint,
+			needsControlSocket: false,
+			displayName: "Игра на четверых",
+			endpoint: gameServer4Endpoint,
 		});
 		
-		// Проверяем результат
-		const updatedServers = serverManager.servermanager.getServersJson();
-		console.log(`Servers after configuration: ${updatedServers.servers.length} server(s)`);
-		if (updatedServers.servers.length > 0) {
-			console.log(`Server configured: ${JSON.stringify(updatedServers.servers[0])}`);
-		}
+		// Настраиваем сервер на 2 игрока (дуэли)
+		serverManager.servermanager.setGameServerConfig(serverConfigs[1].id, {
+			public: true,
+			official: true,
+			recommended: false,
+			needsControlSocket: false,
+			displayName: "Игра на двоих",
+			endpoint: gameServer2Endpoint,
+		});
+		
+		// Настраиваем тренировочный сервер
+		serverManager.servermanager.setGameServerConfig(serverConfigs[2].id, {
+			public: true,
+			official: true,
+			recommended: false,
+			needsControlSocket: false,
+			displayName: "Тренировочный режим",
+			endpoint: gameServerTrainingEndpoint,
+		});
+		
+		console.log(`Configured ${serverConfigs.length} game servers`);
 	}
 } else {
 	console.log(`Found ${serversJson.servers.length} existing game server(s)`);
@@ -153,9 +202,21 @@ Deno.serve({
 		return setMiniAppHeaders(response);
 	}
 
-	// WebSocket для игрового сервера
+	// WebSocket для игрового сервера на 4 игрока (основной)
 	if (url.pathname == "/gameserver" || url.pathname == "/ws") {
-		const response = await gameServer.websocketManager.handleRequest(request, info);
+		const response = await gameServer4Players.websocketManager.handleRequest(request, info);
+		return setMiniAppHeaders(response);
+	}
+	
+	// WebSocket для игрового сервера на 2 игрока (дуэли)
+	if (url.pathname == "/gameserver-duo") {
+		const response = await gameServer2Players.websocketManager.handleRequest(request, info);
+		return setMiniAppHeaders(response);
+	}
+	
+	// WebSocket для тренировочного сервера
+	if (url.pathname == "/gameserver-training") {
+		const response = await gameServerTraining.websocketManager.handleRequest(request, info);
 		return setMiniAppHeaders(response);
 	}
 
@@ -340,5 +401,8 @@ console.log(`Production server started on http://${hostname}:${port}`);
 console.log(`Public base URL: ${publicBaseUrl}/`);
 console.log(`Client available at: ${publicBaseUrl}/`);
 console.log(`Admin panel available at: ${publicBaseUrl}/adminpanel/`);
-console.log(`Game server WebSocket: ${gameServerEndpoint}`);
+console.log(`Game servers:`);
+console.log(`  - 4 Players: ${gameServer4Endpoint}`);
+console.log(`  - 2 Players (Duo): ${gameServer2Endpoint}`);
+console.log(`  - Training: ${gameServerTrainingEndpoint}`);
 
