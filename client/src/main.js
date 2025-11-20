@@ -1727,11 +1727,29 @@ function updateLobbyCard() {
 	
 	var formElem = document.getElementById("nameForm");
 
-	// В тренировочном режиме лобби не должно показываться
 	const serverSelectEl = document.getElementById("serverSelect");
+	// В тренировочном режиме лобби не должно показываться
 	const isTraining = serverSelectEl && serverSelectEl.value && serverSelectEl.value.includes("/gameserver-training");
+	const isDuo = serverSelectEl && serverSelectEl.value && serverSelectEl.value.includes("/gameserver-duo");
 
-	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < lobbyState.minPlayers && 
+	// Determine effective minPlayers
+	// If we haven't received status from server yet (hasLobbyManager is false),
+	// we infer the player count from the selected server to avoid visual flickering (showing 4 then 2).
+	var effectiveMinPlayers = lobbyState.minPlayers;
+	if (!lobbyState.hasLobbyManager) {
+		if (isDuo) {
+			effectiveMinPlayers = 2;
+		} else if (isTraining) {
+			effectiveMinPlayers = 1;
+		} else {
+			// Default to 4 if we can't determine or it's the standard server
+			effectiveMinPlayers = 4;
+		}
+	}
+	// Fallback
+	effectiveMinPlayers = effectiveMinPlayers || 4;
+
+	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < effectiveMinPlayers && 
 		lobbyState.state !== "active" && lobbyState.state !== "countdown";
 	
 	if (shouldShowCard) {
@@ -1740,9 +1758,22 @@ function updateLobbyCard() {
 		if (formElem) formElem.style.display = "none";
 		
 		// Update circles
+		var neededCircles = effectiveMinPlayers;
 		var circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
-		// Total players waiting/active (but show max 4 circles)
-		var totalPlayers = Math.min(lobbyState.waitingCount + lobbyState.activeCount, 4);
+		
+		// Recreate circles if count doesn't match
+		if (circles.length !== neededCircles) {
+			lobbyPlayersIndicator.innerHTML = "";
+			for (var i = 0; i < neededCircles; i++) {
+				var div = document.createElement("div");
+				div.className = "lobby-circle";
+				lobbyPlayersIndicator.appendChild(div);
+			}
+			circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
+		}
+		
+		// Total players waiting/active
+		var totalPlayers = Math.min(lobbyState.waitingCount + lobbyState.activeCount, neededCircles);
 		
 		for (var i = 0; i < circles.length; i++) {
 			if (i < totalPlayers) {
@@ -2885,7 +2916,7 @@ function ctxCanvasSize(ctx, dontUseQuality) {
 		w = h = 300;
 	}
 	if (canvasTransformType == canvasTransformTypes.SKIN_BUTTON) {
-		w = h = 30;
+		w = h = 100;
 	}
 	if (canvasTransformType == canvasTransformTypes.LIFE) {
 		w = h = 60;

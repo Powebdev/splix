@@ -61,8 +61,8 @@ generateTypes({
 
 if (!Deno.args.includes("--no-init")) {
 	const gameServer = initGameServer({
-		arenaWidth: 40,
-		arenaHeight: 40,
+		arenaWidth: 100,
+		arenaHeight: 100,
 		pitWidth: 16,
 		pitHeight: 16,
 		gameMode: "default",

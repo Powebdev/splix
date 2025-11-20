@@ -39,8 +39,8 @@ const createAuthHook = () => ({
 
 // Инициализация игрового сервера на 4 игрока (основной)
 const gameServer4Players = initGameServer({
-	arenaWidth: 40,
-	arenaHeight: 40,
+	arenaWidth: 100,
+	arenaHeight: 100,
 	pitWidth: 16,
 	pitHeight: 16,
 	gameMode: "default",
@@ -52,8 +52,8 @@ const gameServer4Players = initGameServer({
 
 // Инициализация игрового сервера на 2 игрока (дуэли)
 const gameServer2Players = initGameServer({
-	arenaWidth: 30,
-	arenaHeight: 30,
+	arenaWidth: 100,
+	arenaHeight: 100,
 	pitWidth: 12,
 	pitHeight: 12,
 	gameMode: "default",
@@ -66,8 +66,8 @@ const gameServer2Players = initGameServer({
 // Инициализация тренировочного сервера (персональные арены)
 // Использует TrainingMain вместо обычного Main - создаёт отдельную арену для каждого игрока
 const gameServerTraining = initTrainingServer({
-	arenaWidth: 35,
-	arenaHeight: 35,
+	arenaWidth: 100,
+	arenaHeight: 100,
 	pitWidth: 14,
 	pitHeight: 14,
 	gameMode: "default",
