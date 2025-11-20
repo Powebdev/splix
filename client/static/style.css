@@ -3,11 +3,11 @@ html {
 }
 
 html, body {
-	height: auto;
+	height: 100%;
 	min-height: 100%;
 	margin: 0px;
 	width: 100%;
-	overflow: auto;
+	overflow: hidden;
 	-webkit-overflow-scrolling: touch;
 	box-sizing: border-box;
 	position: relative;
@@ -79,6 +79,7 @@ body {
 
 #centerSection {
 	grid-area: 1 / 2;
+	margin-top: 80px;
 }
 
 #adboxContainer {
@@ -432,6 +433,7 @@ a:hover {
 
 #tutorialCanvas {
 	margin-top: 40px;
+	margin-bottom: 12px;
 	box-shadow:
 		1px 1px #2b2623,
 		2px 2px #2b2623,
@@ -728,10 +730,6 @@ a:hover {
 	left: 3px;
 }
 
-#logoCanvas {
-	margin: 30px 0px;
-}
-
 #enteringLandNotification {
 	position: fixed;
 	z-index: 150;
@@ -752,169 +750,6 @@ a:hover {
 	padding-left: 0px;
 }
 
-#cornerLinks {
-	display: block;
-	position: absolute;
-	top: 10px;
-	right: 10px;
-	line-height: 23px;
-	text-align: right;
-	z-index: 100;
-}
-
-#cornerLinks > a {
-	color: white;
-	text-decoration: none;
-	margin-left: 5px;
-}
-#cornerLinks > a:hover {
-	text-decoration: underline;
-}
-
-/* Menu toggle (hamburger) */
-.menu-toggle {
-	display: none;
-	flex-direction: column;
-	cursor: pointer;
-	padding: 5px;
-	margin-bottom: 10px;
-}
-
-.menu-toggle span {
-	width: 25px;
-	height: 3px;
-	background-color: white;
-	margin: 3px 0;
-	transition: 0.3s;
-	border-radius: 2px;
-}
-
-.menu-toggle.active span:nth-child(1) {
-	transform: rotate(-45deg) translate(-5px, 6px);
-}
-
-.menu-toggle.active span:nth-child(2) {
-	opacity: 0;
-}
-
-.menu-toggle.active span:nth-child(3) {
-	transform: rotate(45deg) translate(-5px, -6px);
-}
-
-/* Menu links */
-.menu-links {
-	display: none;
-	position: absolute;
-	top: 40px;
-	right: 0;
-	background-color: rgba(0, 0, 0, 0.9);
-	padding: 10px;
-	border-radius: 5px;
-	min-width: 150px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-	z-index: 101;
-}
-
-.menu-links.active {
-	display: block;
-}
-
-.menu-links a {
-	color: white;
-	text-decoration: none;
-	display: block;
-	margin: 8px 0;
-	padding: 5px 0;
-	text-align: left;
-}
-
-.menu-links a:hover {
-	text-decoration: underline;
-}
-
-/* Desktop: show menu button as text */
-@media (min-width: 769px) {
-	.menu-toggle {
-		display: inline-block;
-		cursor: pointer;
-		color: white;
-		text-decoration: none;
-		margin-left: 5px;
-		padding: 0;
-		margin-bottom: 0;
-	}
-	
-	.menu-toggle span {
-		display: none;
-	}
-	
-	.menu-toggle::before {
-		content: "menu";
-		font-size: inherit;
-	}
-	
-	.menu-toggle.active::before {
-		content: "close";
-	}
-}
-
-/* Mobile styles */
-@media (max-width: 768px) {
-	.menu-toggle {
-		display: flex;
-	}
-	
-	.menu-toggle::before {
-		display: none;
-	}
-}
-
-#qualityText, #uglyText, #spectatorText {
-	cursor: pointer;
-	display: block;
-	margin: 8px 0;
-	padding: 5px 0;
-	text-align: left;
-}
-
-.menu-links hr {
-	border: none;
-	border-top: 1px solid rgba(255, 255, 255, 0.3);
-	margin: 10px 0;
-}
-
-/* Language switcher */
-.language-switcher {
-	display: flex;
-	gap: 8px;
-	margin-top: 10px;
-	justify-content: center;
-}
-
-.lang-btn {
-	background: rgba(255, 255, 255, 0.1);
-	border: 1px solid rgba(255, 255, 255, 0.3);
-	border-radius: 3px;
-	padding: 5px 10px;
-	cursor: pointer;
-	font-size: 20px;
-	transition: all 0.2s;
-	color: white;
-	appearance: none;
-	-webkit-appearance: none;
-	-moz-appearance: none;
-}
-
-.lang-btn:hover {
-	background: rgba(255, 255, 255, 0.2);
-	border-color: rgba(255, 255, 255, 0.5);
-}
-
-.lang-btn.active {
-	background: rgba(255, 255, 255, 0.3);
-	border-color: rgba(255, 255, 255, 0.7);
-	box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
-}
 
 @media (max-width: 950px) {
 	#adboxContainer, #newsbox {

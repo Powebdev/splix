@@ -1439,9 +1439,15 @@ window.onload = function () {
 	});
 
 	//quality button
-	qualityText.onclick = toggleQuality;
-	uglyText.onclick = toggleUglyMode;
-	spectatorText.onclick = toggleSpectatorMode;
+	if (qualityText) {
+		qualityText.onclick = toggleQuality;
+	}
+	if (uglyText) {
+		uglyText.onclick = toggleUglyMode;
+	}
+	if (spectatorText) {
+		spectatorText.onclick = toggleSpectatorMode;
+	}
 	setQuality();
 	setUglyText();
 	setSpectatorText();
@@ -2466,6 +2472,10 @@ function initTitle() {
 		}
 	}
 	titCanvas = document.getElementById("logoCanvas");
+	if (!titCanvas) {
+		titCtx = null;
+		return;
+	}
 	titCtx = titCanvas.getContext("2d");
 }
 
@@ -4374,6 +4384,11 @@ function setQuality() {
 	}
 	if (localStorage.quality != "auto") {
 		canvasQuality = parseFloat(localStorage.quality);
+	}
+	if (!qualityText) {
+		return;
+	}
+	if (localStorage.quality != "auto") {
 		const qualityMap = {
 			"0.4": window.i18n.t("quality.low"),
 			"0.7": window.i18n.t("quality.medium"),
@@ -4388,6 +4403,9 @@ function setQuality() {
 var uglyText;
 function setUglyText() {
 	updateUglyMode();
+	if (!uglyText) {
+		return;
+	}
 	var onOff = uglyMode ? window.i18n.t("mode.on") : window.i18n.t("mode.off");
 	uglyText.innerHTML = window.i18n.t("menu.uglyMode") + ": " + onOff;
 }
@@ -4412,6 +4430,9 @@ function updateUglyMode() {
 var spectatorText;
 function setSpectatorText() {
 	updateSpectatorMode();
+	if (!spectatorText) {
+		return;
+	}
 	var onOff = spectatorMode ? window.i18n.t("mode.on") : window.i18n.t("mode.off");
 	spectatorText.innerHTML = window.i18n.t("menu.spectatorMode") + ": " + onOff;
 }
@@ -4837,7 +4858,7 @@ function loop(timeStamp) {
 		engagementSetIsPlaying(playingAndReady && (Date.now() - lastSendDirTime) < 20000);
 
 		//title
-		if (beginScreenVisible && timeStamp - titleLastRender > 49) {
+		if (titCtx && beginScreenVisible && timeStamp - titleLastRender > 49) {
 			if (resetTitleNextFrame) {
 				resetTitleNextFrame = false;
 				titleTimer = -1;

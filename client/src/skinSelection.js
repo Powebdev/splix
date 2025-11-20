@@ -14,6 +14,12 @@ import { lsSet, mod } from "./util.js";
 let skinButtonCanvas, skinButtonCtx, skinButtonBlocks = [];
 let skinCanvas, skinCtx, skinScreen, skinScreenVisible = false, skinScreenBlocks;
 
+function setExitButtonVisible(isVisible) {
+	const backToAppButton = document.getElementById("backToAppButton");
+	if (!backToAppButton) return;
+	backToAppButton.style.display = isVisible ? null : "none";
+}
+
 /**
  * @param {string} key
  */
@@ -157,6 +163,7 @@ function updateBackButtonText() {
 function showSkinScreen() {
 	skinScreenVisible = true;
 	skinScreen.style.display = null;
+	setExitButtonVisible(false);
 	
 	// Force apply styles and text to back button (for Telegram Mini App compatibility)
 	const backButton = document.getElementById("skinBackButton");
@@ -172,6 +179,7 @@ function showSkinScreen() {
 export function hideSkinScreen() {
 	skinScreenVisible = false;
 	skinScreen.style.display = "none";
+	setExitButtonVisible(true);
 }
 
 //called when a skinbutton is pressed
