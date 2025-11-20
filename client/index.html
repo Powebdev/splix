@@ -130,9 +130,42 @@
 				}
 			})();
 		</script>
+		<style>
+			/* Hide elements we don't want */
+			#newsbox, #adboxContainer, #footer {
+				display: none !important;
+			}
+			
+			/* Back button style */
+			#backToAppButton {
+				position: fixed;
+				top: 10px;
+				left: 10px;
+				z-index: 10000;
+				background: rgba(255,255,255,0.1);
+				backdrop-filter: blur(10px);
+				border: 1px solid rgba(255,255,255,0.2);
+				color: white;
+				padding: 8px 12px;
+				border-radius: 8px;
+				cursor: pointer;
+				font-family: sans-serif;
+				font-weight: bold;
+				display: flex;
+				align-items: center;
+				gap: 6px;
+			}
+			#backToAppButton:hover {
+				background: rgba(255,255,255,0.2);
+			}
+		</style>
 	</head>
 	<body ontouchstart="">
 		<div id="touchControls" style="display: none"></div>
+		<button id="backToAppButton" onclick="window.location.href='/'">
+			← Выход
+		</button>
+		
 		<div id="beginScreen">
 			<canvas id="logoCanvas"></canvas>
 			<br>

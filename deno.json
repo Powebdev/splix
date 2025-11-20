@@ -8,6 +8,7 @@
 		"build-client": "deno run -A scripts/buildClient.js",
 		"build-servermanager": "deno run -A scripts/buildServerManager.js",
 		"build-adminpanel": "deno run -A scripts/buildAdminPanel.js",
+		"deploy-game": "deno run -A scripts/buildClientForWebapp.js",
 		"fmt": "deno fmt"
 	},
 	"importMap": "importmap.json",
