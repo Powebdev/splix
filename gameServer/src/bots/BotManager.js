@@ -36,10 +36,17 @@ export class BotManager {
 	}
 
 	loop(now) {
-		this.#bots = this.#bots.filter((bot) => bot.isActive);
+		// console.log("BotManager loop");
+		const activeBots = [];
 		for (const bot of this.#bots) {
-			bot.update(now);
+			if (bot.isActive) {
+				bot.update(now);
+				activeBots.push(bot);
+			} else {
+				bot.destroy();
+			}
 		}
+		this.#bots = activeBots;
 		this.#ensureBotCount();
 	}
 

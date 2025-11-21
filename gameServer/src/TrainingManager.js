@@ -25,7 +25,7 @@ export class TrainingManager {
 	constructor({ hooks, arenaConfig }) {
 		this.#mainHooks = hooks;
 		this.#arenaConfig = arenaConfig;
-		
+
 		// Периодическая очистка неактивных сессий
 		setInterval(() => {
 			this.#cleanupInactiveSessions();
@@ -40,21 +40,21 @@ export class TrainingManager {
 	 */
 	getOrCreateSession(connection, botCount = 2) {
 		const sessionId = this.#generateSessionId();
-		
+
 		const session = new TrainingSession({
 			sessionId,
 			hooks: this.#mainHooks,
 			arenaConfig: this.#arenaConfig,
 			botCount: Math.max(0, Math.min(4, botCount)), // Ограничиваем 0-4
 		});
-		
+
 		this.#sessions.set(sessionId, session);
-		
+
 		// Удаляем сессию при закрытии последнего соединения
 		session.onEmpty(() => {
 			this.#sessions.delete(sessionId);
 		});
-		
+
 		return session;
 	}
 
@@ -64,7 +64,7 @@ export class TrainingManager {
 	#cleanupInactiveSessions() {
 		const now = Date.now();
 		const timeout = 5 * 60 * 1000; // 5 минут
-		
+
 		for (const [sessionId, session] of this.#sessions.entries()) {
 			if (session.isEmpty() && (now - session.createdAt) > timeout) {
 				session.destroy();
@@ -127,6 +127,9 @@ class TrainingSession {
 					if (this.#playerConnection) {
 						this.#playerConnection.loop(now, dt);
 					}
+					if (this.#botManager) {
+						this.#botManager.loop(now);
+					}
 				},
 			},
 		};
@@ -145,10 +148,6 @@ class TrainingSession {
 
 		this.#botManager = new BotManager(miniMain);
 		miniMain.botManager = this.#botManager;
-
-		this.#applicationLoop.onSlowTickEnded(() => {
-			this.#botManager.loop(performance.now());
-		});
 	}
 
 	get sessionId() {
@@ -169,7 +168,7 @@ class TrainingSession {
 	 */
 	addPlayer(connection) {
 		this.#playerConnection = connection;
-		
+
 		// Запускаем ботов когда игрок присоединяется
 		if (this.#botCount > 0) {
 			this.#botManager.setTargetCount(this.#botCount);
@@ -181,10 +180,10 @@ class TrainingSession {
 	 */
 	removePlayer() {
 		this.#playerConnection = null;
-		
+
 		// Останавливаем ботов
 		this.#botManager.clear();
-		
+
 		// Уведомляем что сессия пуста
 		if (this.#onEmptyCallback) {
 			this.#onEmptyCallback();
