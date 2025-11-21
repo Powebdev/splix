@@ -120,7 +120,7 @@ try {
 	const sourceBundleDir = resolve(distDir, "bundle");
 	const targetBundleDir = resolve(webappStaticDir, "bundle");
 	await ensureDir(targetBundleDir);
-	
+
 	// Remove old bundle files
 	try {
 		for await (const entry of Deno.readDir(targetBundleDir)) {
@@ -131,19 +131,19 @@ try {
 	} catch (e) {
 		// Directory might not exist yet
 	}
-	
+
 	await copy(sourceBundleDir, targetBundleDir, { overwrite: true });
-	
+
 	// Copy static directory
 	const sourceStaticDir = resolve(distDir, "static");
 	const targetStaticDir = resolve(webappStaticDir, "static");
 	await copy(sourceStaticDir, targetStaticDir, { overwrite: true });
-	
+
 	// Copy src directory (i18n.js from client/src/)
 	const sourceSrcDir = resolve("src"); // client/src directory
 	const targetSrcDir = resolve(webappStaticDir, "src");
 	await ensureDir(targetSrcDir);
-	
+
 	// Only copy i18n.js
 	try {
 		await Deno.copyFile(resolve(sourceSrcDir, "i18n.js"), resolve(targetSrcDir, "i18n.js"));
@@ -151,19 +151,19 @@ try {
 	} catch (e) {
 		console.warn("[build-webapp] ⚠️  Could not copy i18n.js:", e.message);
 	}
-	
+
 	// Copy json directory
 	const sourceJsonDir = resolve(distDir, "json");
 	const targetJsonDir = resolve(webappStaticDir, "json");
 	await copy(sourceJsonDir, targetJsonDir, { overwrite: true });
-	
+
 	// Copy HTML files
 	await Deno.copyFile(resolve(distDir, "index.html"), resolve(webappStaticDir, "index.html"));
 	await Deno.copyFile(resolve(distDir, "about.html"), resolve(webappStaticDir, "about.html"));
 	await Deno.copyFile(resolve(distDir, "flags.html"), resolve(webappStaticDir, "flags.html"));
 	await Deno.copyFile(resolve(distDir, "privacy.html"), resolve(webappStaticDir, "privacy.html"));
 	await Deno.copyFile(resolve(distDir, "leaderboards.html"), resolve(webappStaticDir, "leaderboards.html"));
-	
+
 	console.log("[build-webapp] ✅ Successfully copied all files to webapp/static!");
 	console.log("[build-webapp] Main bundle: " + mainEntryPoint);
 	console.log("[build-webapp] Leaderboards bundle: " + leaderboardsEntryPoint);

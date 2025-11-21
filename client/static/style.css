@@ -82,7 +82,7 @@ body {
 
 #centerSection {
 	grid-area: 1 / 2;
-	margin-top: 60px;
+	margin-top: 80px;
 }
 
 #adboxContainer {
@@ -482,6 +482,20 @@ a:hover {
 #tutorialText {
 	margin-top: 30px;
 	color: white;
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-family: sans-serif;
+	font-weight: bold;
+	width: fit-content;
+	margin: 30px auto 0 auto;
+	min-height: 54px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
 }
 
 #expandPage {
