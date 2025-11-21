@@ -8,10 +8,10 @@
 >
 	<path
 		d="M55 30 L31 50 L55 70 z"
-		fill="white"
+		fill="#0d2a16"
 		stroke-linecap="round"
 		stroke-linejoin="round"
-		stroke="white"
+		stroke="#0d2a16"
 		stroke-width="7"
 		transform="rotate(-90 50 50)"
 	/>
