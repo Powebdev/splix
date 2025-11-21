@@ -2,7 +2,8 @@ html {
 	font-family: Arial, Helvetica, sans-serif;
 }
 
-html, body {
+html,
+body {
 	height: 100%;
 	min-height: 100%;
 	margin: 0px;
@@ -15,7 +16,9 @@ html, body {
 
 /* Support for Telegram WebApp fullscreen */
 @supports (height: 100dvh) {
-	html, body {
+
+	html,
+	body {
 		min-height: 100dvh;
 		width: 100dvw;
 	}
@@ -79,7 +82,7 @@ body {
 
 #centerSection {
 	grid-area: 1 / 2;
-	margin-top: 80px;
+	margin-top: 60px;
 }
 
 #adboxContainer {
@@ -112,9 +115,9 @@ body {
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
-	gap: 20px;
+	gap: 10px;
 	margin: 0 auto;
-	padding: 44px 40px 40px;
+	padding: 20px 24px 20px;
 	text-align: left;
 	width: min(480px, 95%);
 	box-sizing: border-box;
@@ -133,8 +136,9 @@ body {
 .inputFancy {
 	border: 1px solid rgba(255, 255, 255, 0.16);
 	outline: 0;
-	font-size: 18px;
-	padding: 14px 18px;
+	outline: 0;
+	font-size: 16px;
+	padding: 12px 16px;
 	margin: 0;
 	border-radius: 18px;
 	background: rgba(255, 255, 255, 0.95);
@@ -203,16 +207,20 @@ body {
 	-webkit-appearance: none;
 }
 
-#trainingBotSelector label {
-	text-align: left;
-	font-family: Arial, sans-serif;
+#trainingBotSelector {
+	margin-top: 10px;
 }
+
+
+
+
 
 .fancyBtn {
 	border: 0;
 	outline: 0;
-	font-size: 18px;
-	padding: 16px 20px;
+	outline: 0;
+	font-size: 16px;
+	padding: 14px 18px;
 	margin: 0;
 	border-radius: 18px;
 	background: linear-gradient(135deg, #6dee8c, #3ddc6a);
@@ -298,10 +306,13 @@ body {
 }
 
 @keyframes lobbyPulse {
-	0%, 100% {
+
+	0%,
+	100% {
 		transform: scale(1);
 		box-shadow: 0 0 0 0 rgba(40, 165, 72, 0.7);
 	}
+
 	50% {
 		transform: scale(1.1);
 		box-shadow: 0 0 0 8px rgba(40, 165, 72, 0);
@@ -329,7 +340,7 @@ body {
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.scoreRank > td {
+.scoreRank>td {
 	padding: 0px 5px;
 	max-width: 200px;
 	overflow: hidden;
@@ -430,7 +441,10 @@ a:hover {
 }
 
 @media (max-width: 700px) {
-	#miniMap, #leaderboard, #lifeBox {
+
+	#miniMap,
+	#leaderboard,
+	#lifeBox {
 		transform: scale(0.7);
 	}
 
@@ -498,7 +512,8 @@ a:hover {
 	margin: 0 auto 20px;
 }
 
-#lastStats, #bestStats {
+#lastStats,
+#bestStats {
 	display: none !important;
 	color: inherit;
 }
@@ -682,11 +697,13 @@ a:hover {
 	cursor: pointer;
 }
 
-.skinButton:hover, #skinSave:hover {
+.skinButton:hover,
+#skinSave:hover {
 	background-color: #22902f;
 }
 
-.skinButton:active, #skinSave:active {
+.skinButton:active,
+#skinSave:active {
 	box-shadow: 0px 0px #155a1c;
 }
 
@@ -773,7 +790,9 @@ a:hover {
 
 
 @media (max-width: 950px) {
-	#adboxContainer, #newsbox {
+
+	#adboxContainer,
+	#newsbox {
 		display: none;
 	}
 }
