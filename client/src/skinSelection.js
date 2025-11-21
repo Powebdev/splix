@@ -69,14 +69,15 @@ window.addEventListener("load", () => {
 });
 
 export async function initSkinScreen() {
-	skinButtonCanvas = document.getElementById("skinButton");
-	skinButtonCtx = skinButtonCanvas.getContext("2d");
-	skinButtonCanvas.onclick = function () {
-		if (canOpenSkinSelection()) {
-			updateSkinLockIcons();
-			doTransition("", false, openSkinScreen);
-		}
-	};
+	const settingsButton = document.getElementById("settingsButton");
+	if (settingsButton) {
+		settingsButton.onclick = function () {
+			if (canOpenSkinSelection()) {
+				updateSkinLockIcons();
+				doTransition("", false, openSkinScreen);
+			}
+		};
+	}
 
 	skinScreenBlocks = [];
 	fillArea(0, 0, VIEWPORT_RADIUS * 2, VIEWPORT_RADIUS * 2, selectedColor + 1, selectedPattern, skinScreenBlocks);
@@ -102,27 +103,10 @@ export async function initSkinScreen() {
 
 	// Listen for language changes to update back button text
 	document.addEventListener("languageChanged", updateBackButtonText);
-
-	var block = getBlock(0, 0, skinButtonBlocks);
-	block.setBlockId(selectedColor + 1, false);
-
-	skinButtonCanvas.onmouseover = function () {
-		if (selectedColor > 0) {
-			skinButtonBlocks[0].setBlockId(selectedColor + 1 + SKIN_BLOCK_COUNT, false);
-		}
-	};
-	skinButtonCanvas.onmouseout = function () {
-		skinButtonBlocks[0].setBlockId(selectedColor + 1, false);
-	};
 }
 
 export function renderSkinButton() {
-	if (!skinButtonCtx) return;
-
-	ctxApplyCamTransform(skinButtonCtx, true, true);
-
-	drawBlocks(skinButtonCtx, skinButtonBlocks);
-	skinButtonCtx.restore();
+	// No longer rendering skin button on canvas
 }
 
 export function renderSkinScreen() {
@@ -149,14 +133,14 @@ function showBeginHideSkin() {
 function updateBackButtonText() {
 	const backButton = document.getElementById("skinBackButton");
 	if (!backButton) return;
-	
+
 	// Get localized text
 	let text = "Назад"; // Default Russian
 	if (window.i18n && typeof window.i18n.getCurrentLanguage === "function") {
 		const lang = window.i18n.getCurrentLanguage();
 		text = lang === "en" ? "Back" : "Назад";
 	}
-	
+
 	backButton.textContent = text;
 }
 
@@ -164,13 +148,13 @@ function showSkinScreen() {
 	skinScreenVisible = true;
 	skinScreen.style.display = null;
 	setExitButtonVisible(false);
-	
+
 	// Force apply styles and text to back button (for Telegram Mini App compatibility)
 	const backButton = document.getElementById("skinBackButton");
 	if (backButton) {
 		// Force apply styles
 		backButton.style.cssText = "position: fixed !important; top: 10px !important; left: 10px !important; z-index: 100 !important; background-color: #666666 !important; background: #666666 !important; color: white !important; border: none !important; border-radius: 6px !important; padding: 8px 16px !important; font-size: 14px !important; font-weight: 600 !important; cursor: pointer !important; box-shadow: 1px 1px #444444, 2px 2px #444444, 3px 3px #444444, 5px 10px 30px rgba(0, 0, 0, 0.3) !important;";
-		
+
 		// Set text with localization
 		updateBackButtonText();
 	}
@@ -232,7 +216,6 @@ function updateScreenBackground() {
 		selectedPattern,
 		skinScreenBlocks,
 	);
-	skinButtonBlocks[0].setBlockId(blockId);
 }
 
 const colorPlusIcon = document.getElementById("colorPlusIcon");
