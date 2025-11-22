@@ -13,6 +13,7 @@ import {
 import { lerp, Vec2 } from "renda";
 import { checkTrailSegment } from "../util/util.js";
 import { PlayerEventHistory } from "./PlayerEventHistory.js";
+import { reportSessionToBackend } from "../BackendReporter.js";
 
 /**
  * When sent inside messages, these translate to an integer:
@@ -457,8 +458,7 @@ export class Player {
 				if (lastVertexA.x == lastVertexB.x && lastVertexA.x == pos.x) {
 					if (pos.y >= lastVertexA.y && pos.y <= lastVertexB.y) {
 						throw new Error(
-							`Assertion failed: Attempted to add a trail vertex (${pos}) in between two previous vertices. Full trail: ${
-								this.#trailVertices.join(" ")
+							`Assertion failed: Attempted to add a trail vertex (${pos}) in between two previous vertices. Full trail: ${this.#trailVertices.join(" ")
 							}`,
 						);
 					}
@@ -468,8 +468,7 @@ export class Player {
 				if (lastVertexA.y == lastVertexB.y && lastVertexA.y == pos.y) {
 					if (pos.x >= lastVertexA.x && pos.x <= lastVertexB.x) {
 						throw new Error(
-							`Assertion failed: Attempted to add a trail vertex (${pos}) in between two previous vertices. Full trail: ${
-								this.#trailVertices.join(" ")
+							`Assertion failed: Attempted to add a trail vertex (${pos}) in between two previous vertices. Full trail: ${this.#trailVertices.join(" ")
 							}`,
 						);
 					}
@@ -1136,6 +1135,25 @@ export class Player {
 		};
 
 		this.#mainInstance.websocketManager.notifyControlSocketsSessionEnd(payload);
+
+		// Send to backend API
+		// Determine game mode based on max players or server config
+		const maxPlayers = this.#game?.maxPlayers || 4;
+		const gameMode = maxPlayers === 2 ? "1v1" : "1v1v1v1";
+
+		// Check if player is winner (rank 1)
+		const isWinner = this.#highestRank === 1;
+
+		reportSessionToBackend({
+			userTelegramId: telegramId,
+			gameMode,
+			isWinner,
+			kills: this.#killCount,
+			maxTiles: this.#maxCapturedTileCount,
+			timeAliveSeconds: this.#getTimeAliveSeconds(),
+			startedAt: new Date(startedAtMs).toISOString(),
+			endedAt: new Date(now).toISOString(),
+		});
 	}
 
 	/**
