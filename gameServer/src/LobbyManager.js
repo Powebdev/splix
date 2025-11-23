@@ -34,6 +34,10 @@ export class LobbyManager {
 		this.#countdownMs = countdownMs;
 	}
 
+	get maxPlayers() {
+		return this.#maxPlayers;
+	}
+
 	/**
 	 * Called once a connection has successfully authenticated.
 	 * @param {import("./WebSocketConnection.js").WebSocketConnection} connection

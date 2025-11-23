@@ -1137,12 +1137,15 @@ export class Player {
 		this.#mainInstance.websocketManager.notifyControlSocketsSessionEnd(payload);
 
 		// Send to backend API
-		// Determine game mode based on max players or server config
-		const maxPlayers = this.#game?.maxPlayers || 4;
-		const gameMode = maxPlayers === 2 ? "1v1" : "1v1v1v1";
+		// Determine game mode based on max players from lobby manager
+		let gameMode = "1v1v1v1"; // default
+		if (this.#mainInstance?.lobbyManager) {
+			const maxPlayers = this.#mainInstance.lobbyManager.maxPlayers || 4;
+			gameMode = maxPlayers === 2 ? "1v1" : "1v1v1v1";
+		}
 
-		// Check if player is winner (rank 1)
-		const isWinner = this.#highestRank === 1;
+		// Check if player is winner (final rank 1)
+		const isWinner = this.#rank === 1;
 
 		reportSessionToBackend({
 			userTelegramId: telegramId,

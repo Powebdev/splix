@@ -24,6 +24,18 @@ const createAuthHook = () => ({
 	async authenticatePlayer({ token, ip }) {
 		// Разрешаем подключение всем игрокам, токен не обязателен.
 		const safeIp = typeof ip == "string" ? ip : "";
+
+		let telegramId = undefined;
+		if (token && typeof token === "string" && token.startsWith("u.")) {
+			const parts = token.split(".");
+			if (parts.length >= 2) {
+				const tid = parseInt(parts[1], 10);
+				if (!isNaN(tid)) {
+					telegramId = tid;
+				}
+			}
+		}
+
 		return {
 			success: true,
 			playerName: undefined, // клиент пришлёт имя отдельным сообщением
@@ -31,7 +43,7 @@ const createAuthHook = () => ({
 			hasExtraLife: false,
 			depositTier: 0,
 			userId: undefined,
-			telegramId: undefined,
+			telegramId: telegramId,
 			metadata: token ? { token, ip: safeIp } : { ip: safeIp },
 		};
 	},
@@ -95,15 +107,15 @@ console.log(`Initial servers check: ${serversJson.servers.length} server(s) foun
 
 if (serversJson.servers.length === 0) {
 	console.log("No game servers found. Creating game servers...");
-	
+
 	// Создаём три сервера
 	serverManager.servermanager.createGameServer();
 	serverManager.servermanager.createGameServer();
 	serverManager.servermanager.createGameServer();
-	
+
 	const serverConfigs = serverManager.servermanager.getServerConfigs();
 	console.log(`Server configs after creation: ${serverConfigs.length}`);
-	
+
 	if (serverConfigs.length >= 3) {
 		// Настраиваем сервер на 4 игрока (основной)
 		serverManager.servermanager.setGameServerConfig(serverConfigs[0].id, {
@@ -114,7 +126,7 @@ if (serversJson.servers.length === 0) {
 			displayName: "Игра на четверых",
 			endpoint: gameServer4Endpoint,
 		});
-		
+
 		// Настраиваем сервер на 2 игрока (дуэли)
 		serverManager.servermanager.setGameServerConfig(serverConfigs[1].id, {
 			public: true,
@@ -124,7 +136,7 @@ if (serversJson.servers.length === 0) {
 			displayName: "Игра на двоих",
 			endpoint: gameServer2Endpoint,
 		});
-		
+
 		// Настраиваем тренировочный сервер
 		serverManager.servermanager.setGameServerConfig(serverConfigs[2].id, {
 			public: true,
@@ -134,7 +146,7 @@ if (serversJson.servers.length === 0) {
 			displayName: "Тренировочный режим",
 			endpoint: gameServerTrainingEndpoint,
 		});
-		
+
 		console.log(`Configured ${serverConfigs.length} game servers`);
 	}
 } else {
@@ -207,13 +219,13 @@ Deno.serve({
 		const response = await gameServer4Players.websocketManager.handleRequest(request, info);
 		return setMiniAppHeaders(response);
 	}
-	
+
 	// WebSocket для игрового сервера на 2 игрока (дуэли)
 	if (url.pathname == "/gameserver-duo") {
 		const response = await gameServer2Players.websocketManager.handleRequest(request, info);
 		return setMiniAppHeaders(response);
 	}
-	
+
 	// WebSocket для тренировочного сервера
 	if (url.pathname == "/gameserver-training") {
 		const response = await gameServerTraining.websocketManager.handleRequest(request, info);
@@ -262,7 +274,7 @@ Deno.serve({
 		try {
 			const file = await Deno.open(filePath, { read: true });
 			const fileInfo = await Deno.stat(filePath);
-			
+
 			let contentType = "application/octet-stream";
 			if (filePath.endsWith(".js")) {
 				contentType = "application/javascript";
@@ -340,14 +352,14 @@ Deno.serve({
 	}
 
 	// Обслуживание статических файлов из собранного клиента
-	if (url.pathname.startsWith("/static/") || 
-		url.pathname.startsWith("/bundle/") || 
+	if (url.pathname.startsWith("/static/") ||
+		url.pathname.startsWith("/bundle/") ||
 		url.pathname.startsWith("/json/")) {
 		const filePath = resolve(clientDistDir, url.pathname.substring(1));
 		try {
 			const file = await Deno.open(filePath, { read: true });
 			const fileInfo = await Deno.stat(filePath);
-			
+
 			// Определение Content-Type
 			let contentType = "application/octet-stream";
 			if (url.pathname.endsWith(".js")) {

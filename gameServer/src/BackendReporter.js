@@ -17,7 +17,7 @@ export async function reportSessionToBackend(sessionData) {
     }
 
     try {
-        const response = await fetch("http://localhost:3000/api/game/report-session", {
+        const response = await fetch("http://localhost:8787/api/game/report-session", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
