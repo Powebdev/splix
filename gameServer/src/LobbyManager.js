@@ -15,6 +15,7 @@ export class LobbyManager {
 	#state = "idle";
 	#countdownTimer = null;
 	#countdownEndsAt = 0;
+	#matchStarted = false;
 
 	/**
 	 * @param {import("./Main.js").Main} mainInstance
@@ -82,6 +83,7 @@ export class LobbyManager {
 
 		if (this.#activeConnections.size === 0) {
 			this.#state = "idle";
+			this.#matchStarted = false;
 			this.#mainInstance.botManager?.clear();
 		}
 
@@ -97,7 +99,9 @@ export class LobbyManager {
 	handlePlayerRemoved(player) {
 		const connection = player.connection;
 		if (!connection) return;
-		this.#fillOpenSlots();
+		// Don't fill open slots when a player dies - this prevents bots from spawning
+		// after real players are eliminated in 1v1 or 1v1v1v1 modes
+		// this.#fillOpenSlots();
 	}
 
 	#maybeStartCountdown() {
@@ -137,6 +141,7 @@ export class LobbyManager {
 			return;
 		}
 		this.#state = "active";
+		this.#matchStarted = true;
 		if (this.#mainInstance.botManager) {
 			const humanSlots = Math.min(this.#waitingConnections.size, this.#maxPlayers);
 			const neededBots = Math.max(
@@ -170,7 +175,8 @@ export class LobbyManager {
 			// No one joined yet; go back to waiting state.
 			this.#state = "idle";
 		}
-		if (this.#mainInstance.botManager) {
+		// Don't add bots after the match has started
+		if (this.#mainInstance.botManager && !this.#matchStarted) {
 			const desiredBots = Math.max(
 				0,
 				Math.min(this.#maxPlayers, this.#minPlayers) - this.#activeConnections.size,
