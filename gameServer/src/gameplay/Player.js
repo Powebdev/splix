@@ -262,7 +262,7 @@ export class Player {
 		this.#eventHistory.onUndoEvent((event) => {
 			if (event.type == "kill-player") {
 				this.game.undoPlayerDeath(event.playerId);
-				if (event.deathType != "arena-bounds") {
+				if (event.deathType == "player" && event.playerId != this.id) {
 					this.#killCount--;
 					this.#killCount = Math.max(0, this.#killCount);
 					this.#sendMyScore();
@@ -951,12 +951,10 @@ export class Player {
 			deathType,
 		});
 		otherPlayer.#die(deathType, this.name);
-		if (deathType != "arena-bounds") {
+		if (deathType == "player" && otherPlayer != this) {
 			this.#killCount++;
 			this.#sendMyScore();
-			if (deathType == "player" && otherPlayer != this) {
-				this.#emitKillEvent(otherPlayer, victimHadExtraLife);
-			}
+			this.#emitKillEvent(otherPlayer, victimHadExtraLife);
 		}
 		return true;
 	}

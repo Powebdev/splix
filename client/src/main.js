@@ -535,9 +535,9 @@ function addSocketWrapper() {
 			var websocket = new RealWebSocket(url);
 			websocket.binaryType = "arraybuffer";
 
-			this.onclose = function () {};
-			this.onopen = function () {};
-			this.onmessage = function () {};
+			this.onclose = function () { };
+			this.onopen = function () { };
+			this.onmessage = function () { };
 
 			var me = this;
 			websocket.onclose = function () {
@@ -944,11 +944,11 @@ function getPlayer(id, array) {
 		},
 		deadAnimParts: [],
 		deadAnimPartsRandDist: [],
-		addHitLine: function (pos, color) {
+		addHitLine: function (pos, color, hitSelf) {
 			this.hitLines.push({
 				pos: pos,
 				vanishTimer: 0,
-				color: color,
+				color: hitSelf ? undefined : color,
 			});
 		},
 		hitLines: [],
@@ -1302,12 +1302,12 @@ window.onload = function () {
 		tg.setBackgroundColor("#3a342f");
 		// Set header color
 		tg.setHeaderColor("#3a342f");
-		
+
 		// Enable vertical scrolling in Telegram
 		if (typeof tg.enableVerticalSwipes === 'function') {
 			tg.enableVerticalSwipes();
 		}
-		
+
 		// Additional fix for scrolling on iOS in Telegram
 		document.body.style.position = 'relative';
 		document.body.style.overflow = 'auto';
@@ -1451,7 +1451,7 @@ window.onload = function () {
 	setQuality();
 	setUglyText();
 	setSpectatorText();
-	
+
 	//lobby cancel button
 	if (lobbyCancelButton) {
 		lobbyCancelButton.onclick = cancelLobbyWaiting;
@@ -1461,12 +1461,12 @@ window.onload = function () {
 	var menuToggle = document.getElementById("menuToggle");
 	var menuLinks = document.getElementById("mainMenuLinks");
 	if (menuToggle && menuLinks) {
-		menuToggle.onclick = function() {
+		menuToggle.onclick = function () {
 			menuToggle.classList.toggle("active");
 			menuLinks.classList.toggle("active");
 		};
 		// Close menu when clicking outside
-		document.addEventListener("click", function(event) {
+		document.addEventListener("click", function (event) {
 			if (!menuToggle.contains(event.target) && !menuLinks.contains(event.target)) {
 				menuToggle.classList.remove("active");
 				menuLinks.classList.remove("active");
@@ -1484,21 +1484,21 @@ window.onload = function () {
 			langEn.classList.toggle("active", currentLang === "en");
 			langRu.classList.toggle("active", currentLang === "ru");
 		}
-		
-		langEn.onclick = function() {
+
+		langEn.onclick = function () {
 			window.i18n.setLanguage("en");
 			updateLanguageButtons();
 		};
-		langRu.onclick = function() {
+		langRu.onclick = function () {
 			window.i18n.setLanguage("ru");
 			updateLanguageButtons();
 		};
-		
+
 		// Initialize button states
 		updateLanguageButtons();
-		
+
 		// Listen for language changes to update dynamic text
-		document.addEventListener("languageChanged", function() {
+		document.addEventListener("languageChanged", function () {
 			setQuality();
 			setUglyText();
 			setSpectatorText();
@@ -1565,11 +1565,11 @@ function onOpen() {
 		if (!tokenToSend || tokenToSend.length < 8) {
 			try {
 				tokenToSend = localStorage.getItem("guestToken") || "";
-			} catch {}
+			} catch { }
 			if (!tokenToSend || tokenToSend.length < 8) {
 				const rnd = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 				tokenToSend = "guest_" + rnd.slice(0, 16);
-				try { localStorage.setItem("guestToken", tokenToSend); } catch {}
+				try { localStorage.setItem("guestToken", tokenToSend); } catch { }
 			}
 		}
 		ws.send(JSON.stringify({ type: "AUTH", token: tokenToSend }));
@@ -1582,10 +1582,10 @@ function onOpen() {
 	sendSkin();
 	sendSpectatorMode();
 	wsSendMsg(sendAction.READY);
-	
+
 	// Update lobby card when connection opens
 	updateLobbyCard();
-	
+
 	if (playingAndReady) {
 		onConnectOrMiddleOfTransition();
 	}
@@ -1650,7 +1650,7 @@ function showBeginHideMainCanvas() {
 	hideMainCanvas();
 }
 
-	//when WebSocket connection is closed
+//when WebSocket connection is closed
 function onClose(evt) {
 	if (!!ws && ws.readyState == WebSocket.OPEN) {
 		ws.close();
@@ -1658,7 +1658,7 @@ function onClose(evt) {
 	ws = null;
 	isConnecting = false;
 	pendingTransition = false;
-	
+
 	// Reset lobby state
 	lobbyState.waitingCount = 0;
 	lobbyState.activeCount = 0;
@@ -1675,7 +1675,7 @@ function onClose(evt) {
 		const isTrainingServer = currentValue.includes("/gameserver-training");
 		trainingBotSelectorEl.style.display = isTrainingServer ? "block" : "none";
 	}
-	
+
 	if (!playingAndReady) {
 		if (!isTransitioning) {
 			if (couldntConnect()) {
@@ -1698,7 +1698,7 @@ function onClose(evt) {
 		if (evt && typeof evt.code !== "undefined") {
 			console.log("WebSocket closed", { code: evt.code, reason: evt.reason });
 		}
-	} catch {}
+	} catch { }
 	ws = null;
 	isConnecting = false;
 }
@@ -1724,7 +1724,7 @@ var pendingTransitionShowAd = false;
  */
 function updateLobbyCard() {
 	if (!lobbyWaitingCard || !lobbyPlayersIndicator) return;
-	
+
 	var formElem = document.getElementById("nameForm");
 
 	const serverSelectEl = document.getElementById("serverSelect");
@@ -1749,18 +1749,18 @@ function updateLobbyCard() {
 	// Fallback
 	effectiveMinPlayers = effectiveMinPlayers || 4;
 
-	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < effectiveMinPlayers && 
+	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < effectiveMinPlayers &&
 		lobbyState.state !== "active" && lobbyState.state !== "countdown";
-	
+
 	if (shouldShowCard) {
 		// Show card, hide form
 		lobbyWaitingCard.style.display = "flex";
 		if (formElem) formElem.style.display = "none";
-		
+
 		// Update circles
 		var neededCircles = effectiveMinPlayers;
 		var circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
-		
+
 		// Recreate circles if count doesn't match
 		if (circles.length !== neededCircles) {
 			lobbyPlayersIndicator.innerHTML = "";
@@ -1771,10 +1771,10 @@ function updateLobbyCard() {
 			}
 			circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
 		}
-		
+
 		// Total players waiting/active
 		var totalPlayers = Math.min(lobbyState.waitingCount + lobbyState.activeCount, neededCircles);
-		
+
 		for (var i = 0; i < circles.length; i++) {
 			if (i < totalPlayers) {
 				circles[i].classList.add("filled");
@@ -1796,11 +1796,11 @@ function updateLobbyCard() {
  */
 function checkAndStartTransition() {
 	if (pendingTransition && !isTransitioning) {
-		var canStart = lobbyState.waitingCount >= lobbyState.minPlayers || 
-			lobbyState.state === "active" || 
+		var canStart = lobbyState.waitingCount >= lobbyState.minPlayers ||
+			lobbyState.state === "active" ||
 			lobbyState.state === "countdown" ||
 			playingAndReady;
-		
+
 		if (canStart) {
 			pendingTransition = false;
 			doTransition("", false, function () {
@@ -1833,13 +1833,13 @@ function cancelLobbyWaiting() {
 	isConnecting = false;
 	isConnectingWithTransition = false;
 	pendingTransition = false;
-	
+
 	// Reset lobby state
 	lobbyState.waitingCount = 0;
 	lobbyState.activeCount = 0;
 	lobbyState.state = "idle";
 	lobbyState.hasLobbyManager = false;
-	
+
 	// Show form, hide card
 	updateLobbyCard();
 	var formElem = document.getElementById("nameForm");
@@ -1856,15 +1856,15 @@ function connectWithTransition(showFullScreenAd) {
 			// Don't start transition immediately - wait for enough players
 			pendingTransition = true;
 			pendingTransitionShowAd = showFullScreenAd;
-			
+
 			// Check if we can start immediately (if no lobby manager)
 			// If no LOBBY_STATUS received within 200ms, assume no lobby system
-			setTimeout(function() {
+			setTimeout(function () {
 				if (pendingTransition && !lobbyState.hasLobbyManager) {
 					checkAndStartTransition();
 				}
 			}, 200);
-			
+
 			nameInput.blur();
 			checkUsername(nameInput.value);
 		}
@@ -1896,14 +1896,14 @@ async function doConnect(showFullScreenAdBeforeConnect) {
 			onClose();
 			return false;
 		}
-		
+
 		// Для тренировочного режима добавляем параметр количества ботов
 		if (server.includes("/gameserver-training")) {
 			const botCountSelect = document.getElementById("botCountSelect");
 			const botCount = botCountSelect ? botCountSelect.value : "2";
 			server = server + "?bots=" + botCount;
 		}
-		
+
 		thisServerAvgPing = thisServerLastPing = 0;
 		ws = new WebSocket(server);
 		ws.binaryType = "arraybuffer";
@@ -1931,7 +1931,7 @@ async function doConnect(showFullScreenAdBeforeConnect) {
 function onMessage(evt) {
 	// console.log(evt);
 	var x, y, type, id, player, w, h, block, i, j, nameBytes;
-	
+
 	// Handle JSON messages (like AUTH_OK, AUTH_ERROR, LOBBY_STATUS)
 	if (typeof evt.data === "string") {
 		try {
@@ -1953,20 +1953,20 @@ function onMessage(evt) {
 				lobbyState.state = jsonMsg.state || "idle";
 				lobbyState.minPlayers = jsonMsg.minPlayers || 4;
 				lobbyState.maxPlayers = jsonMsg.maxPlayers || 8;
-				
+
 				// Update UI
 				updateLobbyCard();
-				
+
 				// Check if we can start transition now
 				checkAndStartTransition();
-				
+
 				return;
 			}
 		} catch (e) {
 			// Not valid JSON, continue with binary processing
 		}
 	}
-	
+
 	var data = new Uint8Array(evt.data);
 	// console.log(evt.data);
 	// for(var key in receiveAction){
@@ -2338,13 +2338,13 @@ function onMessage(evt) {
 		updateLobbyCard();
 		// Check if we can start transition now
 		checkAndStartTransition();
-		
+
 		if (!isTransitioning) {
 			// No transition in progress or transition completed
 			// If beginScreen is still visible, we need to transition to game
 			if (beginScreenVisible) {
 				// Only start transition if we're not waiting for more players
-				if (!pendingTransition || lobbyState.waitingCount >= lobbyState.minPlayers || 
+				if (!pendingTransition || lobbyState.waitingCount >= lobbyState.minPlayers ||
 					lobbyState.state === "active" || lobbyState.state === "countdown") {
 					isTransitioning = true;
 					onConnectOrMiddleOfTransition();
@@ -2494,7 +2494,7 @@ function resetAll() {
 		scoreStatTarget =
 		realScoreStat =
 		realScoreStatTarget =
-			25;
+		25;
 	myRankSent = false;
 	totalPlayers = 0;
 	playingAndReady = false;
@@ -2606,7 +2606,7 @@ function popUp(url, w, h) {
 		url,
 		"_blank",
 		"toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=" +
-			w + ", height=" + h + ", top=" + top + ", left=" + left,
+		w + ", height=" + h + ", top=" + top + ", left=" + left,
 	);
 }
 
@@ -3691,7 +3691,7 @@ function onTouchStart(e) {
 	if (touchControlsElem.style.display === "none" || !playingAndReady) {
 		return;
 	}
-	
+
 	var touch = e.touches[e.touches.length - 1];
 	currentTouches.push({
 		prevPos: [touch.pageX, touch.pageY],
@@ -3706,7 +3706,7 @@ function onTouchMove(e) {
 	if (touchControlsElem.style.display === "none" || !playingAndReady) {
 		return;
 	}
-	
+
 	var touches = e.touches;
 	for (var i = 0; i < touches.length; i++) {
 		var touch = touches[i];
@@ -5530,8 +5530,8 @@ function Utf8ArrayToStr(array) {
 				char3 = array[i++];
 				out += String.fromCharCode(
 					((c & 0x0F) << 12) |
-						((char2 & 0x3F) << 6) |
-						((char3 & 0x3F) << 0),
+					((char2 & 0x3F) << 6) |
+					((char3 & 0x3F) << 0),
 				);
 				break;
 		}
