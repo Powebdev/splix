@@ -14,6 +14,9 @@ export class BotManager {
 	#targetCount = 0;
 	#nextBotId = 1;
 
+	/**
+	 * @param {number} count
+	 */
 	setTargetCount(count) {
 		this.#targetCount = Math.max(0, count);
 		this.#ensureBotCount();
@@ -35,6 +38,9 @@ export class BotManager {
 		return count;
 	}
 
+	/**
+	 * @param {number} now
+	 */
 	loop(now) {
 		// console.log("BotManager loop");
 		const activeBots = [];
