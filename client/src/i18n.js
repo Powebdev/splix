@@ -9,16 +9,16 @@ const translations = {
 		"menu.uglyMode": "Ugly mode",
 		"menu.spectatorMode": "Spectator mode",
 		"menu.language": "Language",
-		
+
 		// Form
 		"form.namePlaceholder": "Enter your name",
 		"form.loading": "Loading...",
 		"form.join": "Join",
-		
+
 		// Lobby
 		"lobby.waiting": "Waiting for players...",
 		"lobby.cancel": "Cancel",
-		
+
 		// Stats
 		"stats.lastGame": "Last game",
 		"stats.bestGame": "Best game",
@@ -37,31 +37,41 @@ const translations = {
 		"stats.blocks.few": "{count} blocks captured",
 		"stats.blocks.many": "{count} blocks captured",
 		"stats.highestRank": "#{rank} highest rank",
-		
+
 		// Quality
 		"quality.low": "low",
 		"quality.medium": "medium",
 		"quality.high": "high",
 		"quality.auto": "auto",
-		
+
 		// Mode
 		"mode.on": "on",
 		"mode.off": "off",
-		
+
 		// Tutorial
 		"tutorial.closeArea": "Close an area to fill it with your color.",
 		"tutorial.dontGetHit": "Don't get hit by other players.",
-		
+
 		// Skin screen
 		"skin.color": "Color",
 		"skin.pattern": "Pattern",
 		"skin.save": "Save",
 		"skin.back": "Back",
 		"skin.title": "block customization",
-		
+
 		// Ads
 		"ads.removeAds": "Don't want to see ads?",
-		
+
+		// Buttons
+		"button.exit": "Exit",
+		"button.back": "Back",
+		"button.bots": "bots",
+
+		// Game servers
+		"server.fourPlayers": "Four Players Game",
+		"server.twoPlayers": "Two Players Game",
+		"server.training": "Training Mode",
+
 		// News
 		"news.recentUpdates": "Recent updates!",
 		"news.spectatorMode": "Spectator mode",
@@ -71,7 +81,7 @@ const translations = {
 		"news.newServerRewrite": "New server rewrite",
 		"news.openSource": "Splix is now open source",
 		"news.changelog": "Changelog",
-		
+
 		// About page
 		"about.title": "Space Bee Battle - About",
 		"about.whatIs": "What is Space Bee Battle?",
@@ -124,16 +134,16 @@ const translations = {
 		"menu.uglyMode": "Упрощённый режим",
 		"menu.spectatorMode": "Режим наблюдателя",
 		"menu.language": "Язык",
-		
+
 		// Form
 		"form.namePlaceholder": "Введите ваше имя",
 		"form.loading": "Загрузка...",
 		"form.join": "Присоединиться",
-		
+
 		// Lobby
 		"lobby.waiting": "Ожидание игроков...",
 		"lobby.cancel": "Отмена",
-		
+
 		// Stats
 		"stats.lastGame": "Последняя игра",
 		"stats.bestGame": "Лучшая игра",
@@ -152,31 +162,41 @@ const translations = {
 		"stats.blocks.few": "{count} блока захвачено",
 		"stats.blocks.many": "{count} блоков захвачено",
 		"stats.highestRank": "#{rank} максимальный ранг",
-		
+
 		// Quality
 		"quality.low": "низкое",
 		"quality.medium": "среднее",
 		"quality.high": "высокое",
 		"quality.auto": "авто",
-		
+
 		// Mode
 		"mode.on": "вкл",
 		"mode.off": "выкл",
-		
+
 		// Tutorial
 		"tutorial.closeArea": "Закройте область, чтобы заполнить её своим цветом.",
 		"tutorial.dontGetHit": "Не дайте другим игрокам вас ударить.",
-		
+
 		// Skin screen
 		"skin.color": "Цвет",
 		"skin.pattern": "Узор",
 		"skin.save": "Сохранить",
 		"skin.back": "Назад",
 		"skin.title": "настройка блока",
-		
+
 		// Ads
 		"ads.removeAds": "Не хотите видеть рекламу?",
-		
+
+		// Buttons
+		"button.exit": "Выход",
+		"button.back": "Назад",
+		"button.bots": "бота",
+
+		// Game servers
+		"server.fourPlayers": "Игра на четверых",
+		"server.twoPlayers": "Игра на двоих",
+		"server.training": "Тренировочный режим",
+
 		// News
 		"news.recentUpdates": "Последние обновления!",
 		"news.spectatorMode": "Режим наблюдателя",
@@ -186,7 +206,7 @@ const translations = {
 		"news.newServerRewrite": "Новая переработка сервера",
 		"news.openSource": "Splix теперь с открытым исходным кодом",
 		"news.changelog": "История изменений",
-		
+
 		// About page
 		"about.title": "Space Bee Battle - О нас",
 		"about.whatIs": "Что такое Space Bee Battle?",
@@ -246,6 +266,21 @@ function getCurrentLanguage() {
 	return "en";
 }
 
+// Set language from URL parameter if present
+function initLanguageFromURL() {
+	try {
+		const urlParams = new URLSearchParams(window.location.search);
+		const langParam = urlParams.get('lang');
+		if (langParam && (langParam === 'en' || langParam === 'ru')) {
+			localStorage.setItem('language', langParam);
+			return langParam;
+		}
+	} catch (e) {
+		console.error('Error reading lang parameter:', e);
+	}
+	return getCurrentLanguage();
+}
+
 // Set language
 function setLanguage(lang) {
 	if (lang === "en" || lang === "ru") {
@@ -258,21 +293,21 @@ function setLanguage(lang) {
 function t(key, params = {}) {
 	const lang = getCurrentLanguage();
 	const translation = translations[lang]?.[key] || translations.en[key] || key;
-	
+
 	// Replace parameters
 	if (params && Object.keys(params).length > 0) {
 		return translation.replace(/\{(\w+)\}/g, (match, paramKey) => {
 			return params[paramKey] || match;
 		});
 	}
-	
+
 	return translation;
 }
 
 // Update all translations on the page
 function updateTranslations() {
 	const lang = getCurrentLanguage();
-	
+
 	// Update elements with data-i18n attribute
 	document.querySelectorAll("[data-i18n]").forEach(el => {
 		const key = el.getAttribute("data-i18n");
@@ -290,13 +325,13 @@ function updateTranslations() {
 			el.textContent = text;
 		}
 	});
-	
+
 	// Update title attribute
 	document.querySelectorAll("[data-i18n-title]").forEach(el => {
 		const key = el.getAttribute("data-i18n-title");
 		el.title = t(key);
 	});
-	
+
 	// Trigger custom event for JavaScript updates
 	document.dispatchEvent(new CustomEvent("languageChanged", { detail: { lang } }));
 }
@@ -320,8 +355,12 @@ if (typeof window !== "undefined") {
 		setLanguage,
 		getCurrentLanguage,
 		updateTranslations,
+		initLanguageFromURL,
 	};
-	
+
+	// Initialize language from URL parameter first
+	initLanguageFromURL();
+
 	// Ensure translations are applied when i18n is ready
 	// This helps with pages that load i18n as a module
 	if (document.readyState === "complete" || document.readyState === "interactive") {

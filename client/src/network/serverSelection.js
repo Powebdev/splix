@@ -1,4 +1,20 @@
 const serverSelectEl = /** @type {HTMLSelectElement} */ (document.getElementById("serverSelect"));
+
+// Функция для перевода названий серверов
+function translateServerName(displayName) {
+	const serverNameMap = {
+		"Игра на четверых": "server.fourPlayers",
+		"Игра на двоих": "server.twoPlayers",
+		"Тренировочный режим": "server.training",
+	};
+
+	const key = serverNameMap[displayName];
+	if (key && window.i18n) {
+		return window.i18n.t(key);
+	}
+	return displayName;
+}
+
 export async function initServerSelection() {
 	let endPoint;
 	// Всегда используем локальный ServerManager, чтобы показывались только ваши сервера
@@ -33,7 +49,7 @@ export async function initServerSelection() {
 	for (const server of servers.servers) {
 		const optionEl = document.createElement("option");
 		optionEl.value = server.endpoint;
-		let textContent = server.displayName;
+		let textContent = translateServerName(server.displayName);
 		if (server.playerCount > 0) {
 			textContent += ` - ${server.playerCount}`;
 		}
