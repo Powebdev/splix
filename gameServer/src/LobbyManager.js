@@ -1,5 +1,5 @@
 /**
- * @typedef {"idle" | "countdown" | "active"} LobbyState
+ * @typedef {"idle" | "countdown" | "versus" | "active"} LobbyState
  */
 
 export class LobbyManager {
@@ -13,9 +13,12 @@ export class LobbyManager {
 	#activeConnections = new Set();
 	/** @type {LobbyState} */
 	#state = "idle";
+	/** @type {ReturnType<typeof setTimeout> | null} */
 	#countdownTimer = null;
 	#countdownEndsAt = 0;
 	#matchStarted = false;
+	/** @type {number?} */
+	#betAmount = null;
 
 	/**
 	 * @param {import("./Main.js").Main} mainInstance
@@ -42,8 +45,22 @@ export class LobbyManager {
 	/**
 	 * Called once a connection has successfully authenticated.
 	 * @param {import("./WebSocketConnection.js").WebSocketConnection} connection
+	 * @param {number?} betAmount
 	 */
-	registerConnection(connection) {
+	registerConnection(connection, betAmount = null) {
+		// If lobby has a bet amount, check if it matches
+		if (this.#betAmount !== null && betAmount !== this.#betAmount) {
+			// Bet mismatch - reject connection
+			console.warn(`Bet mismatch: lobby requires ${this.#betAmount}, but player offered ${betAmount}`);
+			connection.close();
+			return;
+		}
+
+		// If this is the first player, set the lobby's bet amount
+		if (this.#betAmount === null && betAmount !== null) {
+			this.#betAmount = betAmount;
+		}
+
 		this.#waitingConnections.add(connection);
 		connection.setLobbyState("waiting", this.#buildStatusPayload());
 		this.#broadcastStatus();
@@ -122,8 +139,18 @@ export class LobbyManager {
 		this.#broadcastStatus();
 		this.#countdownTimer = setTimeout(() => {
 			this.#countdownTimer = null;
-			this.#beginMatch();
+			this.#startVersus();
 		}, this.#countdownMs);
+	}
+
+	#startVersus() {
+		this.#state = "versus";
+		this.#broadcastStatus();
+		// Versus screen lasts 5 seconds
+		this.#countdownTimer = setTimeout(() => {
+			this.#countdownTimer = null;
+			this.#beginMatch();
+		}, 5000);
 	}
 
 	#cancelCountdown() {
@@ -202,12 +229,13 @@ export class LobbyManager {
 		const botCount = this.#mainInstance.botManager?.getActiveCount?.() ?? 0;
 		return {
 			waitingCount: this.#waitingConnections.size,
-			activeCount: this.#activeConnections.size,
+			activeCount: this.#activeConnections.size + botCount,
 			botCount,
+			state: this.#state,
 			minPlayers: this.#minPlayers,
 			maxPlayers: this.#maxPlayers,
+			betAmount: this.#betAmount,
 			countdownSeconds,
 		};
 	}
 }
-

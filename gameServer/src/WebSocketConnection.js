@@ -58,6 +58,8 @@ export class WebSocketConnection {
 	#lockName = false;
 	#canJoinGame = false;
 	#pendingReady = false;
+	/** @type {number?} */
+	#betAmount = null;
 
 	get controlSocket() {
 		return this.#controlSocket;
@@ -411,6 +413,9 @@ export class WebSocketConnection {
 		}
 	}
 
+	/**
+	 * @param {boolean} active
+	 */
 	updateExtraLife(active) {
 		try {
 			this.#socket.send(JSON.stringify({ type: "EXTRA_LIFE", active }));
@@ -985,6 +990,9 @@ export class WebSocketConnection {
 		return this.#authResult;
 	}
 
+	/**
+	 * @param {any} parsed
+	 */
 	async #handleAuthMessage(parsed) {
 		if (this.#isAuthenticated) {
 			this.#sendAuthOk();
@@ -996,6 +1004,11 @@ export class WebSocketConnection {
 			this.#sendAuthError("invalid_token");
 			this.close();
 			return;
+		}
+
+		// Extract betAmount if provided
+		if (typeof parsed.betAmount === "number" && parsed.betAmount > 0) {
+			this.#betAmount = parsed.betAmount;
 		}
 
 		const hooks = this.#mainInstance.hooks;
@@ -1044,7 +1057,7 @@ export class WebSocketConnection {
 		}
 
 		if (this.#mainInstance?.lobbyManager) {
-			this.#mainInstance.lobbyManager.registerConnection(this);
+			this.#mainInstance.lobbyManager.registerConnection(this, this.#betAmount);
 		} else {
 			this.#canJoinGame = true;
 		}
@@ -1056,6 +1069,9 @@ export class WebSocketConnection {
 		this.send(JSON.stringify({ type: AUTH_OK_MESSAGE }));
 	}
 
+	/**
+	 * @param {string} reason
+	 */
 	#sendAuthError(reason) {
 		this.send(JSON.stringify({ type: AUTH_ERROR_MESSAGE, reason }));
 	}

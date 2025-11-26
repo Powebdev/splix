@@ -18,6 +18,8 @@ const translations = {
 		// Lobby
 		"lobby.waiting": "Waiting for players...",
 		"lobby.cancel": "Cancel",
+		"lobby.gameFor": "Game for {amount} TON",
+		"lobby.countdown": "Game starting in {seconds}...",
 
 		// Stats
 		"stats.lastGame": "Last game",
@@ -66,6 +68,30 @@ const translations = {
 		"button.exit": "Exit",
 		"button.back": "Back",
 		"button.bots": "bots",
+		"button.playagain": "Play Again",
+		"button.mainmenu": "Main Menu",
+		"button.rematch": "Rematch",
+
+		// Bet Selection
+		"bet.selectAmount": "Choose your bet amount",
+		"bet.balance": "Balance: {balance} TON",
+		"bet.insufficient": "Insufficient balance",
+
+		// Versus Screen
+		"versus.title": "{player1} vs {player2}",
+		"versus.bank": "Bank: {amount} TON",
+		"versus.winnertakes": "Winner takes: {amount} TON",
+
+		// Game Over
+		"gameover.victory": "🎉 VICTORY! 🎉",
+		"gameover.defeat": "😔 DEFEAT",
+		"gameover.youwon": "You won: +{amount} TON",
+		"gameover.bank": "Bank: {amount} TON",
+		"gameover.commission": "Commission: -{amount} TON",
+		"gameover.yourwinnings": "Your winnings: {amount} TON",
+		"gameover.lost": "Lost: -{amount} TON",
+		"gameover.winner": "Winner: @{username}",
+		"gameover.theirwinnings": "Their winnings: {amount} TON",
 
 		// Game servers
 		"server.fourPlayers": "Four Players Game",
@@ -143,6 +169,8 @@ const translations = {
 		// Lobby
 		"lobby.waiting": "Ожидание игроков...",
 		"lobby.cancel": "Отмена",
+		"lobby.gameFor": "Игра за {amount} TON",
+		"lobby.countdown": "Игра начинается через {seconds}...",
 
 		// Stats
 		"stats.lastGame": "Последняя игра",
@@ -191,6 +219,30 @@ const translations = {
 		"button.exit": "Выход",
 		"button.back": "Назад",
 		"button.bots": "бота",
+		"button.playagain": "Играть ещё",
+		"button.mainmenu": "Главная",
+		"button.rematch": "Реванш",
+
+		// Bet Selection
+		"bet.selectAmount": "Выберите сумму ставки",
+		"bet.balance": "Баланс: {balance} TON",
+		"bet.insufficient": "Недостаточно средств",
+
+		// Versus Screen
+		"versus.title": "{player1} vs {player2}",
+		"versus.bank": "Банк: {amount} TON",
+		"versus.winnertakes": "Победитель забирает: {amount} TON",
+
+		// Game Over
+		"gameover.victory": "🎉 ПОБЕДА! 🎉",
+		"gameover.defeat": "😔 ПОРАЖЕНИЕ",
+		"gameover.youwon": "Вы выиграли: +{amount} TON",
+		"gameover.bank": "Банк: {amount} TON",
+		"gameover.commission": "Комиссия: -{amount} TON",
+		"gameover.yourwinnings": "Ваш выигрыш: {amount} TON",
+		"gameover.lost": "Проиграно: -{amount} TON",
+		"gameover.winner": "Победитель: @{username}",
+		"gameover.theirwinnings": "Его выигрыш: {amount} TON",
 
 		// Game servers
 		"server.fourPlayers": "Игра на четверых",

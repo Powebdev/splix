@@ -248,7 +248,12 @@ var lastMousePos = [0, 0], mouseHidePos = [0, 0];
 var joinButton,
 	gamemodeDropDownEl;
 var didConfirmOpenInApp = false;
-var lobbyWaitingCard, lobbyPlayersIndicator, lobbyCancelButton;
+var lobbyWaitingCard, lobbyPlayersIndicator, lobbyCancelButton, lobbyBetInfo, lobbyTitle;
+var betSelector, betSelect;
+var versusScreen, versusTitle, versusBank, versusWinnerTakes;
+var gameOverScreen, gameOverTitle, gameOverContent, playAgainButton, mainMenuButton;
+var userBalance = 0;
+var selectedBetAmount = null;
 var lobbyState = {
 	waitingCount: 0,
 	activeCount: 0,
@@ -256,6 +261,8 @@ var lobbyState = {
 	minPlayers: 4,
 	maxPlayers: 8,
 	hasLobbyManager: false, // Track if we've received LOBBY_STATUS
+	betAmount: null, // Current lobby bet amount
+	countdownSeconds: null, // Remaining countdown seconds
 };
 
 (async () => {
@@ -1337,6 +1344,19 @@ window.onload = function () {
 	lobbyWaitingCard = document.getElementById("lobbyWaitingCard");
 	lobbyPlayersIndicator = document.getElementById("lobbyPlayersIndicator");
 	lobbyCancelButton = document.getElementById("lobbyCancelButton");
+	lobbyBetInfo = document.getElementById("lobbyBetInfo");
+	lobbyTitle = document.getElementById("lobbyTitle");
+	betSelector = document.getElementById("betSelector");
+	betSelect = document.getElementById("betSelect");
+	versusScreen = document.getElementById("versusScreen");
+	versusTitle = document.getElementById("versusTitle");
+	versusBank = document.getElementById("versusBank");
+	versusWinnerTakes = document.getElementById("versusWinnerTakes");
+	gameOverScreen = document.getElementById("gameOverScreen");
+	gameOverTitle = document.getElementById("gameOverTitle");
+	gameOverContent = document.getElementById("gameOverContent");
+	playAgainButton = document.getElementById("playAgainButton");
+	mainMenuButton = document.getElementById("mainMenuButton");
 
 	window.onkeydown = function (e) {
 		var c = e.keyCode;
@@ -1416,6 +1436,11 @@ window.onload = function () {
 	formElem = document.getElementById("nameForm");
 	formElem.onsubmit = function () {
 		try {
+			// Check balance if a bet is selected
+			if (selectedBetAmount !== null && selectedBetAmount > userBalance) {
+				alert(translateWithFallback("bet.insufficient", {}, "Insufficient balance"));
+				return false;
+			}
 			connectWithTransition(true);
 		} catch (e) {
 			console.log("Error", e.stack);
@@ -1455,6 +1480,38 @@ window.onload = function () {
 	//lobby cancel button
 	if (lobbyCancelButton) {
 		lobbyCancelButton.onclick = cancelLobbyWaiting;
+	}
+
+	// Bet selection dropdown
+	if (betSelect) {
+		betSelect.addEventListener("change", function () {
+			const amount = parseFloat(this.value);
+			if (!isNaN(amount) && amount > 0) {
+				selectBetAmount(amount);
+			}
+		});
+	}
+
+	// Game over buttons
+	if (playAgainButton) {
+		playAgainButton.onclick = function () {
+			if (gameOverScreen) gameOverScreen.style.display = "none";
+			selectedBetAmount = null;
+			resetAll();
+			loadUserBalance();
+		};
+	}
+	if (mainMenuButton) {
+		mainMenuButton.onclick = function () {
+			if (gameOverScreen) gameOverScreen.style.display = "none";
+			selectedBetAmount = null;
+			resetAll();
+		};
+	}
+
+	// Load initial balance
+	if (AUTH_TOKEN) {
+		loadUserBalance();
 	}
 
 	// Menu toggle
@@ -1506,13 +1563,31 @@ window.onload = function () {
 	}
 
 	initTutorial();
+	initServerSelection();
 	initSkinScreen();
+
+	// Show/hide bet selector based on server selection
+	var serverSelectEl = document.getElementById("serverSelect");
+	if (serverSelectEl && betSelector) {
+		const updateBetSelectorVisibility = () => {
+			const serverValue = serverSelectEl.value || "";
+			// Hide for training mode, show for competitive modes
+			if (serverValue.includes("/gameserver-training")) {
+				betSelector.style.display = "none";
+			} else {
+				betSelector.style.display = "block";
+			}
+		};
+		serverSelectEl.addEventListener("change", updateBetSelectorVisibility);
+		// Initial call
+		setTimeout(updateBetSelectorVisibility, 500);
+	}
 	initTitle();
 	setLeaderboardVisibility();
 
 	//best stats
 
-	const serverSelectEl = document.getElementById("serverSelect");
+	// serverSelectEl already defined above
 	const trainingBotSelectorEl = document.getElementById("trainingBotSelector");
 	const updateTrainingBotSelectorVisibility = (value) => {
 		if (!trainingBotSelectorEl) {
@@ -1572,7 +1647,11 @@ function onOpen() {
 				try { localStorage.setItem("guestToken", tokenToSend); } catch { }
 			}
 		}
-		ws.send(JSON.stringify({ type: "AUTH", token: tokenToSend }));
+		const authMessage = { type: "AUTH", token: tokenToSend };
+		if (selectedBetAmount !== null) {
+			authMessage.betAmount = selectedBetAmount;
+		}
+		ws.send(JSON.stringify(authMessage));
 	} catch (error) {
 		console.error("Failed to send auth token", error);
 	}
@@ -1757,6 +1836,23 @@ function updateLobbyCard() {
 		lobbyWaitingCard.style.display = "flex";
 		if (formElem) formElem.style.display = "none";
 
+		// Update lobby title and bet info
+		if (lobbyTitle) {
+			if (lobbyState.state === "countdown" && lobbyState.countdownSeconds !== null) {
+				lobbyTitle.textContent = translateWithFallback("lobby.countdown", { seconds: lobbyState.countdownSeconds }, `Game starting in ${lobbyState.countdownSeconds}...`);
+			} else {
+				lobbyTitle.textContent = translateWithFallback("lobby.waiting", {}, "Waiting for players...");
+			}
+		}
+
+		// Show bet information if available
+		if (lobbyBetInfo && lobbyState.betAmount !== null) {
+			lobbyBetInfo.textContent = translateWithFallback("lobby.gameFor", { amount: lobbyState.betAmount.toFixed(2) }, `Game for ${lobbyState.betAmount.toFixed(2)} TON`);
+			lobbyBetInfo.style.display = "block";
+		} else if (lobbyBetInfo) {
+			lobbyBetInfo.style.display = "none";
+		}
+
 		// Update circles
 		var neededCircles = effectiveMinPlayers;
 		var circles = lobbyPlayersIndicator.querySelectorAll(".lobby-circle");
@@ -1844,6 +1940,115 @@ function cancelLobbyWaiting() {
 	updateLobbyCard();
 	var formElem = document.getElementById("nameForm");
 	if (formElem) formElem.style.display = "flex";
+}
+
+/**
+ * Load user balance from API
+ */
+async function loadUserBalance() {
+	try {
+		const token = AUTH_TOKEN;
+		if (!token) {
+			console.warn("No auth token available");
+			return;
+		}
+		const response = await fetch('/api/me', {
+			headers: {
+				'Authorization': `Bearer ${token}`
+			}
+		});
+		if (response.ok) {
+			const data = await response.json();
+			if (data.ok && data.user) {
+				userBalance = parseFloat(data.user.ton_balance);
+				if (isNaN(userBalance)) userBalance = 0;
+				console.log("Loaded balance:", userBalance, "Raw:", data.user.ton_balance);
+				updateBalanceDisplay();
+			}
+		}
+	} catch (error) {
+		console.error("Failed to load balance:", error);
+	}
+}
+
+/**
+ * Update balance display in UI
+ */
+function updateBalanceDisplay() {
+	// Balance display removed from UI
+}
+
+/**
+ * Select a bet amount
+ */
+function selectBetAmount(amount) {
+	selectedBetAmount = amount;
+}
+
+/**
+ * Show versus screen
+ */
+function showVersusScreen(player1, player2, bank, winnerTakes) {
+	if (!versusScreen) return;
+
+	if (versusTitle) {
+		versusTitle.textContent = translateWithFallback("versus.title", { player1, player2 }, `${player1} vs ${player2}`);
+	}
+	if (versusBank) {
+		versusBank.textContent = translateWithFallback("versus.bank", { amount: bank.toFixed(2) }, `Bank: ${bank.toFixed(2)} TON`);
+	}
+	if (versusWinnerTakes) {
+		versusWinnerTakes.textContent = translateWithFallback("versus.winnertakes", { amount: winnerTakes.toFixed(2) }, `Winner takes: ${winnerTakes.toFixed(2)} TON`);
+	}
+
+	versusScreen.style.display = "flex";
+	beginScreen.style.display = "none";
+
+	// Hide after 5 seconds
+	setTimeout(() => {
+		if (versusScreen) versusScreen.style.display = "none";
+	}, 5000);
+}
+
+/**
+ * Show game over screen
+ */
+function showGameOverScreen(isVictory, data) {
+	if (!gameOverScreen) return;
+
+	if (gameOverTitle) {
+		gameOverTitle.textContent = isVictory
+			? translateWithFallback("gameover.victory", {}, "🎉 VICTORY! 🎉")
+			: translateWithFallback("gameover.defeat", {}, "😔 DEFEAT");
+	}
+
+	if (gameOverContent) {
+		let content = "";
+		if (isVictory) {
+			const bank = data.bank || 0;
+			const commission = data.commission || 0;
+			const winnings = data.winnings || 0;
+			content = `
+				<p>${translateWithFallback("gameover.youwon", { amount: winnings.toFixed(2) }, `You won: +${winnings.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.bank", { amount: bank.toFixed(2) }, `Bank: ${bank.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.commission", { amount: commission.toFixed(2) }, `Commission: -${commission.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.yourwinnings", { amount: winnings.toFixed(2) }, `Your winnings: ${winnings.toFixed(2)} TON`)}</p>
+			`;
+		} else {
+			const lost = data.lost || 0;
+			const winner = data.winner || "Unknown";
+			const theirWinnings = data.theirWinnings || 0;
+			content = `
+				<p>${translateWithFallback("gameover.lost", { amount: lost.toFixed(2) }, `Lost: -${lost.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.winner", { username: winner }, `Winner: @${winner}`)}</p>
+				<p>${translateWithFallback("gameover.theirwinnings", { amount: theirWinnings.toFixed(2) }, `Their winnings: ${theirWinnings.toFixed(2)} TON`)}</p>
+			`;
+		}
+		gameOverContent.innerHTML = content;
+	}
+
+	gameOverScreen.style.display = "flex";
+	beginScreen.style.display = "none";
 }
 
 /**
@@ -1953,6 +2158,8 @@ function onMessage(evt) {
 				lobbyState.state = jsonMsg.state || "idle";
 				lobbyState.minPlayers = jsonMsg.minPlayers || 4;
 				lobbyState.maxPlayers = jsonMsg.maxPlayers || 8;
+				lobbyState.betAmount = jsonMsg.betAmount !== undefined ? jsonMsg.betAmount : null;
+				lobbyState.countdownSeconds = jsonMsg.countdownSeconds !== undefined ? jsonMsg.countdownSeconds : null;
 
 				// Update UI
 				updateLobbyCard();
