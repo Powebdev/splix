@@ -24,6 +24,8 @@ import { WebSocketManager } from "./WebSocketManager.js";
  * @property {number} [depositTier]
  * @property {string} [userId]
  * @property {number} [telegramId]
+ * @property {string} [photoUrl]
+ * @property {string} [telegramUsername]
  * @property {Record<string, unknown>} [metadata]
  */
 

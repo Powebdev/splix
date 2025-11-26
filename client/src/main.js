@@ -263,7 +263,10 @@ var lobbyState = {
 	hasLobbyManager: false, // Track if we've received LOBBY_STATUS
 	betAmount: null, // Current lobby bet amount
 	countdownSeconds: null, // Remaining countdown seconds
+	players: [], // Players in lobby [{username, photoUrl, telegramId}]
 };
+var pendingGameResult = null; // Stores GAME_RESULT for showing after death
+var gameOverShown = false; // Prevents showing game over screen multiple times
 
 (async () => {
 	updateAdlad(null);
@@ -1494,20 +1497,26 @@ window.onload = function () {
 
 	// Game over buttons
 	if (playAgainButton) {
-		playAgainButton.onclick = function () {
+		playAgainButton.onclick = function (e) {
+			console.log("[GameOver] Play Again clicked");
+			e.stopPropagation();
 			if (gameOverScreen) gameOverScreen.style.display = "none";
 			selectedBetAmount = null;
-			resetAll();
+			pendingGameResult = null;
+			gameOverShown = false;
+			resetAll(); // resetAll() already closes WebSocket
 			loadUserBalance();
 		};
 	}
 	if (mainMenuButton) {
-		mainMenuButton.onclick = function () {
-			if (gameOverScreen) gameOverScreen.style.display = "none";
-			selectedBetAmount = null;
-			resetAll();
+		mainMenuButton.onclick = function (e) {
+			console.log("[GameOver] Main Menu clicked");
+			e.stopPropagation();
+			// Navigate to main MiniApp page
+			window.location.href = "/";
 		};
 	}
+
 
 	// Load initial balance
 	if (AUTH_TOKEN) {
@@ -1651,6 +1660,21 @@ function onOpen() {
 		if (selectedBetAmount !== null) {
 			authMessage.betAmount = selectedBetAmount;
 		}
+		
+		// Add Telegram user data if available
+		try {
+			var tg = window.Telegram && window.Telegram.WebApp;
+			if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+				var tgUser = tg.initDataUnsafe.user;
+				authMessage.telegramUsername = tgUser.username || tgUser.first_name || null;
+				authMessage.telegramPhotoUrl = tgUser.photo_url || null;
+				authMessage.telegramFirstName = tgUser.first_name || null;
+				authMessage.telegramLastName = tgUser.last_name || null;
+			}
+		} catch (e) {
+			console.warn("Could not get Telegram user data", e);
+		}
+		
 		ws.send(JSON.stringify(authMessage));
 	} catch (error) {
 		console.error("Failed to send auth token", error);
@@ -1713,6 +1737,11 @@ export function showBeginScreen() {
 	beginScreenVisible = true;
 	updateCmpPersistentLinkVisibility();
 	nameInput.focus();
+	
+	// Hide game result screens
+	if (gameOverScreen) gameOverScreen.style.display = "none";
+	if (versusScreen) versusScreen.style.display = "none";
+	
 	// Убедимся, что форма отображается корректно (если мы не в лобби)
 	updateLobbyCard();
 }
@@ -1829,7 +1858,26 @@ function updateLobbyCard() {
 	effectiveMinPlayers = effectiveMinPlayers || 4;
 
 	var shouldShowCard = !isTraining && ws && lobbyState.waitingCount < effectiveMinPlayers &&
-		lobbyState.state !== "active" && lobbyState.state !== "countdown";
+		lobbyState.state !== "active" && lobbyState.state !== "countdown" && lobbyState.state !== "versus";
+
+	// Handle countdown overlay
+	var countdownOverlay = document.getElementById("countdownOverlay");
+	var countdownNumber = document.getElementById("countdownNumber");
+	if (lobbyState.state === "countdown" && lobbyState.countdownSeconds !== null && lobbyState.countdownSeconds > 0) {
+		if (countdownOverlay) {
+			countdownOverlay.style.display = "flex";
+			if (countdownNumber) {
+				countdownNumber.textContent = lobbyState.countdownSeconds;
+				// Trigger animation restart
+				countdownNumber.style.animation = "none";
+				countdownNumber.offsetHeight; // Force reflow
+				countdownNumber.style.animation = "countdownPop 1s ease-out";
+			}
+		}
+		if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
+	} else {
+		if (countdownOverlay) countdownOverlay.style.display = "none";
+	}
 
 	if (shouldShowCard) {
 		// Show card, hide form
@@ -1839,9 +1887,11 @@ function updateLobbyCard() {
 		// Update lobby title and bet info
 		if (lobbyTitle) {
 			if (lobbyState.state === "countdown" && lobbyState.countdownSeconds !== null) {
-				lobbyTitle.textContent = translateWithFallback("lobby.countdown", { seconds: lobbyState.countdownSeconds }, `Game starting in ${lobbyState.countdownSeconds}...`);
+				lobbyTitle.textContent = translateWithFallback("lobby.countdown", { seconds: lobbyState.countdownSeconds }, `Игра начинается через ${lobbyState.countdownSeconds}...`);
+				lobbyTitle.classList.add("countdown");
 			} else {
-				lobbyTitle.textContent = translateWithFallback("lobby.waiting", {}, "Waiting for players...");
+				lobbyTitle.textContent = translateWithFallback("lobby.waiting", {}, "Ожидание игроков...");
+				lobbyTitle.classList.remove("countdown");
 			}
 		}
 
@@ -1892,10 +1942,8 @@ function updateLobbyCard() {
  */
 function checkAndStartTransition() {
 	if (pendingTransition && !isTransitioning) {
-		var canStart = lobbyState.waitingCount >= lobbyState.minPlayers ||
-			lobbyState.state === "active" ||
-			lobbyState.state === "countdown" ||
-			playingAndReady;
+		// Only start when state is "active" (after versus screen) or playingAndReady
+		var canStart = lobbyState.state === "active" || playingAndReady;
 
 		if (canStart) {
 			pendingTransition = false;
@@ -1986,23 +2034,99 @@ function selectBetAmount(amount) {
 }
 
 /**
- * Show versus screen
+ * Show versus screen with player avatars
+ * @param {Array<{username: string, photoUrl: string|null, telegramId: number|null}>} players
+ * @param {number} bank
+ * @param {number} winnerTakes
  */
-function showVersusScreen(player1, player2, bank, winnerTakes) {
+function showVersusScreen(players, bank, winnerTakes) {
 	if (!versusScreen) return;
 
-	if (versusTitle) {
-		versusTitle.textContent = translateWithFallback("versus.title", { player1, player2 }, `${player1} vs ${player2}`);
-	}
-	if (versusBank) {
-		versusBank.textContent = translateWithFallback("versus.bank", { amount: bank.toFixed(2) }, `Bank: ${bank.toFixed(2)} TON`);
-	}
-	if (versusWinnerTakes) {
-		versusWinnerTakes.textContent = translateWithFallback("versus.winnertakes", { amount: winnerTakes.toFixed(2) }, `Winner takes: ${winnerTakes.toFixed(2)} TON`);
+	// Ensure we have at least placeholder players
+	if (!players || players.length === 0) {
+		players = [
+			{ username: "Игрок 1", photoUrl: null, telegramId: null },
+			{ username: "Игрок 2", photoUrl: null, telegramId: null }
+		];
 	}
 
+	// Build players display with avatars
+	var versusPlayersContainer = document.getElementById("versusPlayersContainer");
+	if (versusPlayersContainer) {
+		versusPlayersContainer.innerHTML = "";
+		players.forEach((player, index) => {
+			var playerEl = document.createElement("div");
+			playerEl.className = "versus-player";
+
+			var avatarEl = document.createElement("div");
+			avatarEl.className = "versus-avatar";
+			if (player.photoUrl) {
+				var img = document.createElement("img");
+				img.src = player.photoUrl;
+				img.alt = player.username;
+				img.onerror = function() {
+					this.style.display = "none";
+					avatarEl.textContent = player.username.charAt(0).toUpperCase();
+				};
+				avatarEl.appendChild(img);
+			} else {
+				avatarEl.textContent = player.username.charAt(0).toUpperCase();
+			}
+
+			var nameEl = document.createElement("div");
+			nameEl.className = "versus-name";
+			nameEl.textContent = "@" + player.username;
+
+			playerEl.appendChild(avatarEl);
+			playerEl.appendChild(nameEl);
+			versusPlayersContainer.appendChild(playerEl);
+
+			// Add "vs" between players
+			if (index < players.length - 1) {
+				var vsEl = document.createElement("div");
+				vsEl.className = "versus-vs";
+				vsEl.textContent = "VS";
+				versusPlayersContainer.appendChild(vsEl);
+			}
+		});
+	}
+
+	// Also show title as fallback
+	if (versusTitle) {
+		var playerNames = players.map(p => "@" + p.username).join(" vs ");
+		versusTitle.textContent = playerNames;
+		versusTitle.style.display = "block";
+	}
+
+	if (versusBank) {
+		if (bank > 0) {
+			versusBank.textContent = translateWithFallback("versus.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)} TON`);
+			versusBank.style.display = "block";
+		} else {
+			versusBank.style.display = "none";
+		}
+	}
+	if (versusWinnerTakes) {
+		if (winnerTakes > 0) {
+			versusWinnerTakes.textContent = translateWithFallback("versus.winnertakes", { amount: winnerTakes.toFixed(2) }, `Победитель забирает: ${winnerTakes.toFixed(2)} TON`);
+			versusWinnerTakes.style.display = "block";
+		} else {
+			versusWinnerTakes.style.display = "none";
+		}
+	}
+
+	// Hide countdown overlay
+	var countdownOverlay = document.getElementById("countdownOverlay");
+	if (countdownOverlay) countdownOverlay.style.display = "none";
+
+	// versusScreen is inside beginScreen, so beginScreen must be visible
+	beginScreen.style.display = "block";
 	versusScreen.style.display = "flex";
-	beginScreen.style.display = "none";
+	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
+	
+	// Hide name form
+	var nameForm = document.getElementById("nameForm");
+	if (nameForm) nameForm.style.display = "none";
 
 	// Hide after 5 seconds
 	setTimeout(() => {
@@ -2015,11 +2139,17 @@ function showVersusScreen(player1, player2, bank, winnerTakes) {
  */
 function showGameOverScreen(isVictory, data) {
 	if (!gameOverScreen) return;
+	if (gameOverShown) return; // Prevent showing multiple times
+	gameOverShown = true;
+
+	// Add victory/defeat class for styling
+	gameOverScreen.classList.remove("victory", "defeat");
+	gameOverScreen.classList.add(isVictory ? "victory" : "defeat");
 
 	if (gameOverTitle) {
 		gameOverTitle.textContent = isVictory
-			? translateWithFallback("gameover.victory", {}, "🎉 VICTORY! 🎉")
-			: translateWithFallback("gameover.defeat", {}, "😔 DEFEAT");
+			? translateWithFallback("gameover.victory", {}, "🎉 ПОБЕДА! 🎉")
+			: translateWithFallback("gameover.defeat", {}, "😔 ПОРАЖЕНИЕ");
 	}
 
 	if (gameOverContent) {
@@ -2029,26 +2159,67 @@ function showGameOverScreen(isVictory, data) {
 			const commission = data.commission || 0;
 			const winnings = data.winnings || 0;
 			content = `
-				<p>${translateWithFallback("gameover.youwon", { amount: winnings.toFixed(2) }, `You won: +${winnings.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.bank", { amount: bank.toFixed(2) }, `Bank: ${bank.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.commission", { amount: commission.toFixed(2) }, `Commission: -${commission.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.yourwinnings", { amount: winnings.toFixed(2) }, `Your winnings: ${winnings.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.youwon", { amount: winnings.toFixed(2) }, `Вы выиграли: +${winnings.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.commission", { amount: commission.toFixed(2) }, `Комиссия: -${commission.toFixed(2)} TON`)}</p>
+				<p><strong>${translateWithFallback("gameover.yourwinnings", { amount: winnings.toFixed(2) }, `Ваш выигрыш: ${winnings.toFixed(2)} TON`)}</strong></p>
 			`;
 		} else {
 			const lost = data.lost || 0;
 			const winner = data.winner || "Unknown";
 			const theirWinnings = data.theirWinnings || 0;
 			content = `
-				<p>${translateWithFallback("gameover.lost", { amount: lost.toFixed(2) }, `Lost: -${lost.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.winner", { username: winner }, `Winner: @${winner}`)}</p>
-				<p>${translateWithFallback("gameover.theirwinnings", { amount: theirWinnings.toFixed(2) }, `Their winnings: ${theirWinnings.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.lost", { amount: lost.toFixed(2) }, `Проиграно: -${lost.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.winner", { username: winner }, `Победитель: @${winner}`)}</p>
+				<p>${translateWithFallback("gameover.theirwinnings", { amount: theirWinnings.toFixed(2) }, `Его выигрыш: ${theirWinnings.toFixed(2)} TON`)}</p>
 			`;
 		}
 		gameOverContent.innerHTML = content;
 	}
 
+	// Update play again button text
+	if (playAgainButton) {
+		playAgainButton.textContent = isVictory 
+			? translateWithFallback("button.playagain", {}, "Играть ещё")
+			: translateWithFallback("button.playagain", {}, "Играть ещё");
+	}
+
+	// Hide game UI elements
+	var playUI = document.getElementById("playUI");
+	if (playUI) playUI.style.display = "none";
+	
+	// Hide main canvas
+	var mainCanvas = document.getElementById("mainCanvas");
+	if (mainCanvas) mainCanvas.style.display = "none";
+	
+	// Hide touch controls (has z-index: 10000 and blocks clicks!)
+	var touchControls = document.getElementById("touchControls");
+	if (touchControls) touchControls.style.display = "none";
+	
+	// Hide countdown overlay (has z-index: 9999 and blocks clicks)
+	var countdownOverlay = document.getElementById("countdownOverlay");
+	if (countdownOverlay) countdownOverlay.style.display = "none";
+	
+	// Hide versus screen if visible
+	if (versusScreen) versusScreen.style.display = "none";
+	
+	// Show game over screen within begin screen
+	beginScreen.style.display = "block";
 	gameOverScreen.style.display = "flex";
-	beginScreen.style.display = "none";
+	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
+	
+	// Hide the form
+	var nameForm = document.getElementById("nameForm");
+	if (nameForm) nameForm.style.display = "none";
+	
+	// Reset playing state to allow settings button to work
+	playingAndReady = false;
+	
+	// Close WebSocket connection since game is over
+	if (ws && ws.readyState === WebSocket.OPEN) {
+		ws.close();
+	}
+	ws = null;
 }
 
 /**
@@ -2160,6 +2331,21 @@ function onMessage(evt) {
 				lobbyState.maxPlayers = jsonMsg.maxPlayers || 8;
 				lobbyState.betAmount = jsonMsg.betAmount !== undefined ? jsonMsg.betAmount : null;
 				lobbyState.countdownSeconds = jsonMsg.countdownSeconds !== undefined ? jsonMsg.countdownSeconds : null;
+				lobbyState.players = Array.isArray(jsonMsg.players) ? jsonMsg.players : [];
+
+				// Handle versus state - show versus screen
+				if (lobbyState.state === "versus" && lobbyState.players.length >= 1) {
+					const playerCount = Math.max(lobbyState.players.length, lobbyState.minPlayers);
+					const bank = (lobbyState.betAmount || 0) * playerCount;
+					const commission = bank * 0.2;
+					const winnerTakes = bank - commission;
+					showVersusScreen(lobbyState.players, bank, winnerTakes);
+				}
+
+				// Hide versus screen when game becomes active
+				if (lobbyState.state === "active" && versusScreen) {
+					versusScreen.style.display = "none";
+				}
 
 				// Update UI
 				updateLobbyCard();
@@ -2167,6 +2353,11 @@ function onMessage(evt) {
 				// Check if we can start transition now
 				checkAndStartTransition();
 
+				return;
+			}
+			if (jsonMsg.type === "GAME_RESULT") {
+				// Store game result for showing after death
+				pendingGameResult = jsonMsg;
 				return;
 			}
 		} catch (e) {
@@ -2486,25 +2677,36 @@ function onMessage(evt) {
 		closedBecauseOfDeath = true;
 		allowSkipDeathTransition = true;
 		refreshBanner();
-		//show newsbox
-		document.getElementById("newsbox").style.display = null;
-		deathTransitionTimeout = window.setTimeout(function () {
-			// resetAll();
-			if (skipDeathTransition) {
-				doTransition("", false, function () {
-					onClose();
-					resetAll();
-				});
-			} else {
-				// console.log("before doTransition",isTransitioning);
-				doTransition("GAME OVER", true, null, function () {
-					onClose();
-					resetAll();
-				}, true);
-				// console.log("after doTransition",isTransitioning);
-			}
-			deathTransitionTimeout = null;
-		}, 1000);
+
+		// Check if we have a pending game result (for matches with bets)
+		if (pendingGameResult) {
+			// Show game over screen instead of standard transition
+			deathTransitionTimeout = window.setTimeout(function () {
+				showGameOverScreen(pendingGameResult.isVictory, pendingGameResult);
+				pendingGameResult = null;
+				deathTransitionTimeout = null;
+			}, 1000);
+		} else {
+			//show newsbox
+			document.getElementById("newsbox").style.display = null;
+			deathTransitionTimeout = window.setTimeout(function () {
+				// resetAll();
+				if (skipDeathTransition) {
+					doTransition("", false, function () {
+						onClose();
+						resetAll();
+					});
+				} else {
+					// console.log("before doTransition",isTransitioning);
+					doTransition("GAME OVER", true, null, function () {
+						onClose();
+						resetAll();
+					}, true);
+					// console.log("after doTransition",isTransitioning);
+				}
+				deathTransitionTimeout = null;
+			}, 1000);
+		}
 	}
 	if (data[0] == receiveAction.MINIMAP) {
 		var part = data[1];
@@ -2697,6 +2899,8 @@ function resetAll() {
 	updateCmpPersistentLinkVisibility();
 	myPos = null;
 	myRank = 0;
+	pendingGameResult = null;
+	gameOverShown = false;
 	scoreStat =
 		scoreStatTarget =
 		realScoreStat =

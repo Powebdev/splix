@@ -15,6 +15,8 @@ export class LobbyManager {
 	#state = "idle";
 	/** @type {ReturnType<typeof setTimeout> | null} */
 	#countdownTimer = null;
+	/** @type {ReturnType<typeof setInterval> | null} */
+	#countdownInterval = null;
 	#countdownEndsAt = 0;
 	#matchStarted = false;
 	/** @type {number?} */
@@ -40,6 +42,10 @@ export class LobbyManager {
 
 	get maxPlayers() {
 		return this.#maxPlayers;
+	}
+
+	get betAmount() {
+		return this.#betAmount;
 	}
 
 	/**
@@ -119,6 +125,32 @@ export class LobbyManager {
 		// Don't fill open slots when a player dies - this prevents bots from spawning
 		// after real players are eliminated in 1v1 or 1v1v1v1 modes
 		// this.#fillOpenSlots();
+
+		// Check for winner - if only one human player remains in active match
+		if (this.#state === "active" && this.#matchStarted) {
+			this.#checkForWinner();
+		}
+	}
+
+	/**
+	 * Check if there's a winner (only one human player left)
+	 */
+	#checkForWinner() {
+		// Get all active players from the game
+		const game = this.#mainInstance.game;
+		if (!game) return;
+
+		const alivePlayers = game.getAlivePlayers();
+		const humanPlayers = alivePlayers.filter(p => !p.isBot);
+
+		console.log(`[LobbyManager] checkForWinner: ${alivePlayers.length} alive, ${humanPlayers.length} human, matchStarted=${this.#matchStarted}`);
+
+		// If only one human player remains and match has started, they win
+		if (humanPlayers.length === 1 && this.#matchStarted) {
+			const winner = humanPlayers[0];
+			console.log(`[LobbyManager] Winner found: ${winner.name}`);
+			winner.notifyVictory();
+		}
 	}
 
 	#maybeStartCountdown() {
@@ -137,14 +169,26 @@ export class LobbyManager {
 		this.#state = "countdown";
 		this.#countdownEndsAt = Date.now() + this.#countdownMs;
 		this.#broadcastStatus();
+
+		// Update countdown every second
+		this.#countdownInterval = setInterval(() => {
+			this.#broadcastStatus();
+		}, 1000);
+
 		this.#countdownTimer = setTimeout(() => {
 			this.#countdownTimer = null;
+			if (this.#countdownInterval) {
+				clearInterval(this.#countdownInterval);
+				this.#countdownInterval = null;
+			}
 			this.#startVersus();
 		}, this.#countdownMs);
 	}
 
 	#startVersus() {
 		this.#state = "versus";
+		const payload = this.#buildStatusPayload();
+		console.log("[LobbyManager] Starting versus state, players:", JSON.stringify(payload.players));
 		this.#broadcastStatus();
 		// Versus screen lasts 5 seconds
 		this.#countdownTimer = setTimeout(() => {
@@ -157,6 +201,10 @@ export class LobbyManager {
 		if (this.#countdownTimer) {
 			clearTimeout(this.#countdownTimer);
 			this.#countdownTimer = null;
+		}
+		if (this.#countdownInterval) {
+			clearInterval(this.#countdownInterval);
+			this.#countdownInterval = null;
 		}
 		this.#state = "idle";
 	}
@@ -227,6 +275,17 @@ export class LobbyManager {
 		const countdownSeconds =
 			this.#state === "countdown" ? Math.max(0, Math.ceil((this.#countdownEndsAt - Date.now()) / 1000)) : null;
 		const botCount = this.#mainInstance.botManager?.getActiveCount?.() ?? 0;
+
+		// Collect player info for versus screen
+		/** @type {Array<{username: string, photoUrl: string|null, telegramId: number|null}>} */
+		const players = [];
+		for (const connection of this.#waitingConnections) {
+			players.push(connection.getPlayerInfo());
+		}
+		for (const connection of this.#activeConnections) {
+			players.push(connection.getPlayerInfo());
+		}
+
 		return {
 			waitingCount: this.#waitingConnections.size,
 			activeCount: this.#activeConnections.size + botCount,
@@ -236,6 +295,7 @@ export class LobbyManager {
 			maxPlayers: this.#maxPlayers,
 			betAmount: this.#betAmount,
 			countdownSeconds,
+			players,
 		};
 	}
 }

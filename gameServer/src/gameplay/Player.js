@@ -172,6 +172,21 @@ export class Player {
 		return this.#permanentlyDead;
 	}
 
+	/**
+	 * Returns true if player is dead (either temporarily or permanently)
+	 */
+	get isDead() {
+		return this.#permanentlyDead || Boolean(this.#lastDeathState);
+	}
+
+	/**
+	 * Returns true if this is a bot player
+	 */
+	get isBot() {
+		const metadata = this.#auth?.metadata;
+		return Boolean(metadata && metadata.isBot);
+	}
+
 	#skinColorId = 0;
 	#skinPatternId = 0;
 	/** If the client sent a paid skin id, this is the skin we fallback to if it turns out the client hasn't paid. */
@@ -969,6 +984,7 @@ export class Player {
 	 */
 	#die(deathType, killerName) {
 		if (this.#lastDeathState) return;
+		if (this.#hasWon) return; // Don't allow death after winning
 		this.#lastDeathState = {
 			dieTime: performance.now(),
 			type: deathType,
@@ -995,6 +1011,10 @@ export class Player {
 		}
 		this.#incrementRankingFirstSeconds();
 		const rankingFirstSeconds = Math.round(this.#rankingFirstSeconds / 1000);
+
+		// Send GAME_RESULT BEFORE GAME_OVER so client receives it first
+		this.#sendGameResult(false);
+
 		this.connection.sendGameOver(
 			this.#capturedTileCount,
 			this.#killCount,
@@ -1004,6 +1024,90 @@ export class Player {
 			this.#lastDeathState.type,
 			this.#lastDeathState.type == "player" ? this.#lastDeathState.killerName : "",
 		);
+
+		// Check for winner immediately after player dies (don't wait for connection close)
+		if (this.#mainInstance?.lobbyManager) {
+			// Use setTimeout to ensure this happens after current death processing
+			setTimeout(() => {
+				this.#mainInstance.lobbyManager.handlePlayerRemoved(this);
+			}, 0);
+		}
+	}
+
+	/**
+	 * Send game result for matches
+	 * @param {boolean} isVictory
+	 */
+	#sendGameResult(isVictory) {
+		const lobbyManager = this.#mainInstance?.lobbyManager;
+		if (!lobbyManager) {
+			console.log("[Player] sendGameResult: No lobby manager");
+			return;
+		}
+
+		// Get bet amount from lobby manager
+		const betAmount = lobbyManager.betAmount || 0;
+		const minPlayers = lobbyManager.maxPlayers || 2;
+		const bank = betAmount * minPlayers;
+		const commission = bank * 0.2;
+		const winnerTakes = bank - commission;
+
+		console.log(`[Player] sendGameResult: isVictory=${isVictory}, betAmount=${betAmount}, bank=${bank}`);
+
+		if (isVictory) {
+			this.connection.sendGameResult({
+				isVictory: true,
+				bank,
+				commission,
+				winnings: winnerTakes,
+			});
+		} else {
+			const killerName = this.#lastDeathState?.type === "player" 
+				? this.#lastDeathState.killerName 
+				: "Unknown";
+			this.connection.sendGameResult({
+				isVictory: false,
+				lost: betAmount,
+				winner: killerName,
+				theirWinnings: winnerTakes,
+			});
+		}
+	}
+
+	#hasWon = false;
+
+	/**
+	 * Called when this player wins the match (last one standing)
+	 */
+	notifyVictory() {
+		if (this.#hasWon || this.#permanentlyDead) return; // Prevent duplicate calls
+		this.#hasWon = true;
+		
+		this.#sendGameResult(true);
+		// Send game over to winner so they see the result screen
+		this.#incrementRankingFirstSeconds();
+		const rankingFirstSeconds = Math.round(this.#rankingFirstSeconds / 1000);
+		this.connection.sendGameOver(
+			this.#capturedTileCount,
+			this.#killCount,
+			this.#highestRank,
+			this.#getTimeAliveSeconds(),
+			rankingFirstSeconds,
+			"player", // winner "died" to complete the match
+			"",
+		);
+		
+		// Close connection after a short delay to ensure messages are sent
+		setTimeout(() => {
+			this.connection.close();
+		}, 500);
+	}
+
+	/**
+	 * Returns true if this player has won the match
+	 */
+	get hasWon() {
+		return this.#hasWon;
 	}
 
 	#getTimeAliveSeconds() {

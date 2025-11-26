@@ -879,6 +879,28 @@ export class WebSocketConnection {
 	}
 
 	/**
+	 * Sends game result for matches with bets (victory/defeat info)
+	 * @param {Object} result
+	 * @param {boolean} result.isVictory
+	 * @param {number} [result.bank]
+	 * @param {number} [result.commission]
+	 * @param {number} [result.winnings]
+	 * @param {number} [result.lost]
+	 * @param {string} [result.winner]
+	 * @param {number} [result.theirWinnings]
+	 */
+	sendGameResult(result) {
+		try {
+			this.#socket.send(JSON.stringify({
+				type: "GAME_RESULT",
+				...result,
+			}));
+		} catch {
+			// best effort only
+		}
+	}
+
+	/**
 	 * @param {number} capturedTiles
 	 * @param {number} kills
 	 */
@@ -991,6 +1013,29 @@ export class WebSocketConnection {
 	}
 
 	/**
+	 * Returns player info for lobby display (versus screen, etc.)
+	 * @returns {{username: string, photoUrl: string|null, telegramId: number|null}}
+	 */
+	getPlayerInfo() {
+		// Priority: telegramUsername > authResult.telegramUsername > receivedName > playerName > "Player"
+		const username = this.#telegramUsername 
+			|| this.#authResult?.telegramUsername 
+			|| this.#receivedName 
+			|| this.#authResult?.playerName 
+			|| "Player";
+		return {
+			username,
+			photoUrl: this.#telegramPhotoUrl || this.#authResult?.photoUrl || null,
+			telegramId: this.#authResult?.telegramId || null,
+		};
+	}
+
+	/** @type {string|null} */
+	#telegramUsername = null;
+	/** @type {string|null} */
+	#telegramPhotoUrl = null;
+
+	/**
 	 * @param {any} parsed
 	 */
 	async #handleAuthMessage(parsed) {
@@ -1009,6 +1054,21 @@ export class WebSocketConnection {
 		// Extract betAmount if provided
 		if (typeof parsed.betAmount === "number" && parsed.betAmount > 0) {
 			this.#betAmount = parsed.betAmount;
+		}
+
+		// Extract Telegram user data if provided
+		if (typeof parsed.telegramUsername === "string" && parsed.telegramUsername) {
+			this.#telegramUsername = parsed.telegramUsername;
+		}
+		if (typeof parsed.telegramPhotoUrl === "string" && parsed.telegramPhotoUrl) {
+			this.#telegramPhotoUrl = parsed.telegramPhotoUrl;
+		}
+		// Use first_name + last_name as fallback for username
+		if (!this.#telegramUsername && parsed.telegramFirstName) {
+			this.#telegramUsername = parsed.telegramFirstName;
+			if (parsed.telegramLastName) {
+				this.#telegramUsername += " " + parsed.telegramLastName;
+			}
 		}
 
 		const hooks = this.#mainInstance.hooks;
@@ -1038,6 +1098,14 @@ export class WebSocketConnection {
 			this.#sendAuthError(reason);
 			this.close();
 			return;
+		}
+
+		// Merge Telegram data into authResult
+		if (this.#telegramUsername) {
+			result.telegramUsername = this.#telegramUsername;
+		}
+		if (this.#telegramPhotoUrl) {
+			result.photoUrl = this.#telegramPhotoUrl;
 		}
 
 		this.#authResult = result;

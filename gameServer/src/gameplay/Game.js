@@ -228,6 +228,20 @@ export class Game {
 		this.#fireOnPlayerCountChange();
 	}
 
+	/**
+	 * Get all alive (non-spectator, non-dead) players
+	 * @returns {Player[]}
+	 */
+	getAlivePlayers() {
+		const alivePlayers = [];
+		for (const player of this.#players.values()) {
+			if (!player.isSpectator && !player.isDead) {
+				alivePlayers.push(player);
+			}
+		}
+		return alivePlayers;
+	}
+
 	/** @typedef {(count: number) => void} OnPlayerCountChangeCallback */
 
 	/** @type {Set<OnPlayerCountChangeCallback>} */

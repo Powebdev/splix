@@ -863,3 +863,340 @@ a:hover {
 	padding: 20px 50px;
 	margin: 20px;
 }
+
+/* ========================================
+   VERSUS SCREEN STYLES
+   ======================================== */
+
+#versusScreen {
+	display: none;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	margin: 80px auto 0;
+	padding: 40px 48px;
+	text-align: center;
+	width: min(560px, 95%);
+	box-sizing: border-box;
+	background: linear-gradient(145deg, #1a1a2e, #16213e);
+	border-radius: 28px;
+	box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	animation: versusAppear 0.5s ease-out;
+}
+
+@keyframes versusAppear {
+	0% {
+		opacity: 0;
+		transform: scale(0.9) translateY(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+#versusPlayersContainer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.versus-player {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	animation: playerSlide 0.6s ease-out both;
+}
+
+.versus-player:nth-child(1) {
+	animation-delay: 0.2s;
+}
+
+.versus-player:nth-child(3) {
+	animation-delay: 0.4s;
+}
+
+@keyframes playerSlide {
+	0% {
+		opacity: 0;
+		transform: translateX(-30px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.versus-player:nth-child(3) {
+	animation-name: playerSlideRight;
+}
+
+@keyframes playerSlideRight {
+	0% {
+		opacity: 0;
+		transform: translateX(30px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.versus-avatar {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 32px;
+	font-weight: bold;
+	color: white;
+	text-transform: uppercase;
+	box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+	border: 3px solid rgba(255, 255, 255, 0.2);
+	overflow: hidden;
+}
+
+.versus-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.versus-name {
+	font-size: 18px;
+	font-weight: 600;
+	color: white;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.versus-vs {
+	font-size: 36px;
+	font-weight: 900;
+	color: #ff6b6b;
+	text-shadow: 0 0 20px rgba(255, 107, 107, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3);
+	animation: vsPulse 1s ease-in-out infinite;
+}
+
+@keyframes vsPulse {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.15);
+	}
+}
+
+#versusTitle {
+	font-size: 24px;
+	font-weight: 700;
+	color: white;
+	margin: 16px 0 0 0;
+	display: none; /* Shown via JS when needed */
+}
+
+#versusBank,
+#versusWinnerTakes {
+	font-size: 16px;
+	color: rgba(255, 255, 255, 0.85);
+	margin: 4px 0;
+}
+
+#versusBank {
+	font-weight: 600;
+	color: #4ecdc4;
+}
+
+#versusWinnerTakes {
+	font-weight: 700;
+	color: #ffe66d;
+	font-size: 18px;
+}
+
+/* ========================================
+   GAME OVER SCREEN STYLES
+   ======================================== */
+
+#gameOverScreen {
+	display: none;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20px;
+	margin: 80px auto 0;
+	padding: 40px 48px;
+	text-align: center;
+	width: min(480px, 95%);
+	box-sizing: border-box;
+	border-radius: 28px;
+	box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	animation: gameOverAppear 0.5s ease-out;
+	background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+	position: relative;
+	z-index: 20000;
+}
+
+#gameOverScreen.victory {
+	background: linear-gradient(145deg, #1d4e2c, #0d3d1a);
+}
+
+#gameOverScreen.defeat {
+	background: linear-gradient(145deg, #4e1d1d, #3d0d0d);
+}
+
+@keyframes gameOverAppear {
+	0% {
+		opacity: 0;
+		transform: scale(0.85);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+#gameOverTitle {
+	font-size: 32px;
+	font-weight: 800;
+	color: white;
+	margin: 0 0 8px 0;
+	text-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+#gameOverContent {
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 16px;
+	line-height: 1.8;
+}
+
+#gameOverContent p {
+	margin: 8px 0;
+}
+
+#gameOverButtons {
+	margin-top: 24px;
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+	flex-wrap: wrap;
+	position: relative;
+	z-index: 10;
+}
+
+#gameOverButtons .fancyBtn {
+	min-width: 120px;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+#gameOverButtons .fancyBtn.primary {
+	background: linear-gradient(135deg, #6dee8c, #3ddc6a);
+}
+
+#gameOverButtons .fancyBtn.secondary {
+	background: linear-gradient(135deg, #666666, #4a4a4a);
+	color: white;
+}
+
+/* ========================================
+   COUNTDOWN STYLES
+   ======================================== */
+
+#countdownOverlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 9999;
+}
+
+#countdownNumber {
+	font-size: 180px;
+	font-weight: 900;
+	color: white;
+	text-shadow: 0 0 60px rgba(255, 255, 255, 0.5), 0 10px 30px rgba(0, 0, 0, 0.5);
+	animation: countdownPop 1s ease-out;
+}
+
+@keyframes countdownPop {
+	0% {
+		opacity: 0;
+		transform: scale(2);
+	}
+	30% {
+		opacity: 1;
+		transform: scale(0.9);
+	}
+	60% {
+		transform: scale(1.05);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Lobby countdown text enhancement */
+#lobbyTitle.countdown {
+	font-size: 24px;
+	color: #ffe66d;
+	animation: countdownTextPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownTextPulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+	#versusScreen,
+	#gameOverScreen {
+		padding: 28px 24px;
+		border-radius: 20px;
+	}
+
+	.versus-avatar {
+		width: 64px;
+		height: 64px;
+		font-size: 26px;
+	}
+
+	.versus-name {
+		font-size: 14px;
+		max-width: 90px;
+	}
+
+	.versus-vs {
+		font-size: 28px;
+	}
+
+	#gameOverTitle {
+		font-size: 26px;
+	}
+
+	#countdownNumber {
+		font-size: 120px;
+	}
+}
