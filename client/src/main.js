@@ -1764,6 +1764,22 @@ export function showBeginScreen() {
 	if (gameOverScreen) gameOverScreen.style.display = "none";
 	if (versusScreen) versusScreen.style.display = "none";
 
+	// Restore visibility of elements that were hidden during versus screen
+	var newsbox = document.getElementById("newsbox");
+	if (newsbox) newsbox.style.display = null;
+
+	var tutorialText = document.getElementById("tutorialText");
+	if (tutorialText) tutorialText.style.display = null;
+
+	var tutorialCanvas = document.getElementById("tutorialCanvas");
+	if (tutorialCanvas) tutorialCanvas.style.display = null;
+
+	var settingsButton = document.getElementById("settingsButton");
+	if (settingsButton) settingsButton.style.display = null;
+
+	var backToAppButton = document.getElementById("backToAppButton");
+	if (backToAppButton) backToAppButton.style.display = null;
+
 	// Убедимся, что форма отображается корректно (если мы не в лобби)
 	updateLobbyCard();
 }
@@ -1953,7 +1969,9 @@ function updateLobbyCard() {
 	} else {
 		// Hide card, show form if not in game
 		lobbyWaitingCard.style.display = "none";
-		if (formElem && beginScreenVisible) {
+		// Don't show form if versusScreen is visible
+		var versusScreenVisible = versusScreen && versusScreen.style.display === "flex";
+		if (formElem && beginScreenVisible && !versusScreenVisible) {
 			formElem.style.display = "flex";
 		}
 	}
@@ -2145,11 +2163,32 @@ function showVersusScreen(players, bank, winnerTakes) {
 	// versusScreen is inside beginScreen, so beginScreen must be visible
 	beginScreen.style.display = "block";
 	versusScreen.style.display = "flex";
-	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
 
-	// Hide name form
+	// Hide all other elements in beginScreen to show only versusScreen
+	// Don't hide mainMenu itself, as versusScreen is inside it
+	// Instead, hide specific elements within mainMenu
 	var nameForm = document.getElementById("nameForm");
 	if (nameForm) nameForm.style.display = "none";
+
+	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
+
+	var newsbox = document.getElementById("newsbox");
+	if (newsbox) newsbox.style.display = "none";
+
+	var adboxContainer = document.getElementById("adboxContainer");
+	if (adboxContainer) adboxContainer.style.display = "none";
+
+	var tutorialText = document.getElementById("tutorialText");
+	if (tutorialText) tutorialText.style.display = "none";
+
+	var tutorialCanvas = document.getElementById("tutorialCanvas");
+	if (tutorialCanvas) tutorialCanvas.style.display = "none";
+
+	var settingsButton = document.getElementById("settingsButton");
+	if (settingsButton) settingsButton.style.display = "none";
+
+	var backToAppButton = document.getElementById("backToAppButton");
+	if (backToAppButton) backToAppButton.style.display = "none";
 
 	// Hide after 5 seconds
 	setTimeout(() => {
