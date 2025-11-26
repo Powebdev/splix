@@ -2114,11 +2114,12 @@ function showVersusScreen(players, bank, winnerTakes) {
 	}
 
 	// Also show title as fallback
-	if (versusTitle) {
-		var playerNames = players.map(p => "@" + p.username).join(" vs ");
-		versusTitle.textContent = playerNames;
-		versusTitle.style.display = "block";
-	}
+	// Also show title as fallback
+	// if (versusTitle) {
+	// 	var playerNames = players.map(p => "@" + p.username).join(" vs ");
+	// 	versusTitle.textContent = playerNames;
+	// 	versusTitle.style.display = "block";
+	// }
 
 	if (versusBank) {
 		if (bank > 0) {
