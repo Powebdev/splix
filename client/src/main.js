@@ -1429,7 +1429,29 @@ window.onload = function () {
 	// uiElems.push(closeNotification);
 
 	nameInput = document.getElementById("nameInput");
-	if (localStorage.name) {
+
+	// Try to get Telegram username
+	var tgName = null;
+	try {
+		console.log("Checking for Telegram WebApp...");
+		var tg = window.Telegram && window.Telegram.WebApp;
+		console.log("Telegram object:", tg);
+		if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+			console.log("User data found:", tg.initDataUnsafe.user);
+			tgName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+			if (tgName && tgName.length > 20) {
+				tgName = tgName.substring(0, 20);
+			}
+		} else {
+			console.log("No user data in initDataUnsafe");
+		}
+	} catch (e) {
+		console.error("Error fetching TG data:", e);
+	}
+
+	if (tgName) {
+		nameInput.value = tgName;
+	} else if (localStorage.name) {
 		nameInput.value = localStorage.name;
 	}
 	nameInput.focus();
@@ -1660,7 +1682,7 @@ function onOpen() {
 		if (selectedBetAmount !== null) {
 			authMessage.betAmount = selectedBetAmount;
 		}
-		
+
 		// Add Telegram user data if available
 		try {
 			var tg = window.Telegram && window.Telegram.WebApp;
@@ -1674,7 +1696,7 @@ function onOpen() {
 		} catch (e) {
 			console.warn("Could not get Telegram user data", e);
 		}
-		
+
 		ws.send(JSON.stringify(authMessage));
 	} catch (error) {
 		console.error("Failed to send auth token", error);
@@ -1737,11 +1759,11 @@ export function showBeginScreen() {
 	beginScreenVisible = true;
 	updateCmpPersistentLinkVisibility();
 	nameInput.focus();
-	
+
 	// Hide game result screens
 	if (gameOverScreen) gameOverScreen.style.display = "none";
 	if (versusScreen) versusScreen.style.display = "none";
-	
+
 	// Убедимся, что форма отображается корректно (если мы не в лобби)
 	updateLobbyCard();
 }
@@ -2064,7 +2086,7 @@ function showVersusScreen(players, bank, winnerTakes) {
 				var img = document.createElement("img");
 				img.src = player.photoUrl;
 				img.alt = player.username;
-				img.onerror = function() {
+				img.onerror = function () {
 					this.style.display = "none";
 					avatarEl.textContent = player.username.charAt(0).toUpperCase();
 				};
@@ -2123,7 +2145,7 @@ function showVersusScreen(players, bank, winnerTakes) {
 	beginScreen.style.display = "block";
 	versusScreen.style.display = "flex";
 	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
-	
+
 	// Hide name form
 	var nameForm = document.getElementById("nameForm");
 	if (nameForm) nameForm.style.display = "none";
@@ -2179,7 +2201,7 @@ function showGameOverScreen(isVictory, data) {
 
 	// Update play again button text
 	if (playAgainButton) {
-		playAgainButton.textContent = isVictory 
+		playAgainButton.textContent = isVictory
 			? translateWithFallback("button.playagain", {}, "Играть ещё")
 			: translateWithFallback("button.playagain", {}, "Играть ещё");
 	}
@@ -2187,34 +2209,34 @@ function showGameOverScreen(isVictory, data) {
 	// Hide game UI elements
 	var playUI = document.getElementById("playUI");
 	if (playUI) playUI.style.display = "none";
-	
+
 	// Hide main canvas
 	var mainCanvas = document.getElementById("mainCanvas");
 	if (mainCanvas) mainCanvas.style.display = "none";
-	
+
 	// Hide touch controls (has z-index: 10000 and blocks clicks!)
 	var touchControls = document.getElementById("touchControls");
 	if (touchControls) touchControls.style.display = "none";
-	
+
 	// Hide countdown overlay (has z-index: 9999 and blocks clicks)
 	var countdownOverlay = document.getElementById("countdownOverlay");
 	if (countdownOverlay) countdownOverlay.style.display = "none";
-	
+
 	// Hide versus screen if visible
 	if (versusScreen) versusScreen.style.display = "none";
-	
+
 	// Show game over screen within begin screen
 	beginScreen.style.display = "block";
 	gameOverScreen.style.display = "flex";
 	if (lobbyWaitingCard) lobbyWaitingCard.style.display = "none";
-	
+
 	// Hide the form
 	var nameForm = document.getElementById("nameForm");
 	if (nameForm) nameForm.style.display = "none";
-	
+
 	// Reset playing state to allow settings button to work
 	playingAndReady = false;
-	
+
 	// Close WebSocket connection since game is over
 	if (ws && ws.readyState === WebSocket.OPEN) {
 		ws.close();
