@@ -18,7 +18,7 @@ const translations = {
 		// Lobby
 		"lobby.waiting": "Waiting for players...",
 		"lobby.cancel": "Cancel",
-		"lobby.gameFor": "Game for {amount} TON",
+		"lobby.gameFor": "Game for {amount}",
 		"lobby.countdown": "Game starting in {seconds}...",
 
 		// Stats
@@ -74,24 +74,24 @@ const translations = {
 
 		// Bet Selection
 		"bet.selectAmount": "Choose your bet amount",
-		"bet.balance": "Balance: {balance} TON",
+		"bet.balance": "Balance: {balance}",
 		"bet.insufficient": "Insufficient balance",
 
 		// Versus Screen
 		"versus.title": "{player1} vs {player2}",
-		"versus.bank": "Bank: {amount} TON",
-		"versus.winnertakes": "Winner takes: {amount} TON",
+		"versus.bank": "Bank: {amount}",
+		"versus.winnertakes": "Winner takes: {amount}",
 
 		// Game Over
 		"gameover.victory": "🎉 VICTORY! 🎉",
 		"gameover.defeat": "😔 DEFEAT",
-		"gameover.youwon": "You won: +{amount} TON",
-		"gameover.bank": "Bank: {amount} TON",
-		"gameover.commission": "Commission: -{amount} TON",
-		"gameover.yourwinnings": "Your winnings: {amount} TON",
-		"gameover.lost": "Lost: -{amount} TON",
+		"gameover.youwon": "You won: +{amount}",
+		"gameover.bank": "Bank: {amount}",
+		"gameover.commission": "Commission: -{amount}",
+		"gameover.yourwinnings": "Your winnings: {amount}",
+		"gameover.lost": "Lost: -{amount}",
 		"gameover.winner": "Winner: @{username}",
-		"gameover.theirwinnings": "Their winnings: {amount} TON",
+		"gameover.theirwinnings": "Their winnings: {amount}",
 
 		// Game servers
 		"server.fourPlayers": "Four Players Game",
@@ -169,7 +169,7 @@ const translations = {
 		// Lobby
 		"lobby.waiting": "Ожидание игроков...",
 		"lobby.cancel": "Отмена",
-		"lobby.gameFor": "Игра за {amount} TON",
+		"lobby.gameFor": "Игра за {amount}",
 		"lobby.countdown": "Игра начинается через {seconds}...",
 
 		// Stats
@@ -225,24 +225,24 @@ const translations = {
 
 		// Bet Selection
 		"bet.selectAmount": "Выберите сумму ставки",
-		"bet.balance": "Баланс: {balance} TON",
+		"bet.balance": "Баланс: {balance}",
 		"bet.insufficient": "Недостаточно средств",
 
 		// Versus Screen
 		"versus.title": "{player1} vs {player2}",
-		"versus.bank": "Банк: {amount} TON",
-		"versus.winnertakes": "Победитель забирает: {amount} TON",
+		"versus.bank": "Банк: {amount}",
+		"versus.winnertakes": "Победитель забирает: {amount}",
 
 		// Game Over
 		"gameover.victory": "🎉 ПОБЕДА! 🎉",
 		"gameover.defeat": "😔 ПОРАЖЕНИЕ",
-		"gameover.youwon": "Вы выиграли: +{amount} TON",
-		"gameover.bank": "Банк: {amount} TON",
-		"gameover.commission": "Комиссия: -{amount} TON",
-		"gameover.yourwinnings": "Ваш выигрыш: {amount} TON",
-		"gameover.lost": "Проиграно: -{amount} TON",
+		"gameover.youwon": "Вы выиграли: +{amount}",
+		"gameover.bank": "Банк: {amount}",
+		"gameover.commission": "Комиссия: -{amount}",
+		"gameover.yourwinnings": "Ваш выигрыш: {amount}",
+		"gameover.lost": "Проиграно: -{amount}",
 		"gameover.winner": "Победитель: @{username}",
-		"gameover.theirwinnings": "Его выигрыш: {amount} TON",
+		"gameover.theirwinnings": "Его выигрыш: {amount}",
 
 		// Game servers
 		"server.fourPlayers": "Игра на четверых",

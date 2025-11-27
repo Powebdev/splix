@@ -62,6 +62,18 @@ function translateCount(baseKey, count, fallback) {
 	return fallback;
 }
 
+/**
+ * Returns the official TON icon as an inline SVG string
+ * @param {number} size - Size of the icon in pixels (default: 16)
+ * @returns {string} SVG markup for TON icon
+ */
+function getTonIconSVG(size = 16) {
+	return `<svg width="${size}" height="${size}" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; margin-left: 4px;">
+<path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0098EA"></path>
+<path d="M37.5603 15.6277H18.4386C14.9228 15.6277 12.6944 19.4202 14.4632 22.4861L26.2644 42.9409C27.0345 44.2765 28.9644 44.2765 29.7345 42.9409L41.5381 22.4861C43.3045 19.4251 41.0761 15.6277 37.5627 15.6277H37.5603ZM26.2548 36.8068L23.6847 31.8327L17.4833 20.7414C17.0742 20.0315 17.5795 19.1218 18.4362 19.1218H26.2524V36.8092L26.2548 36.8068ZM38.5108 20.739L32.3118 31.8351L29.7417 36.8068V19.1194H37.5579C38.4146 19.1194 38.9199 20.0291 38.5108 20.739Z" fill="white"></path>
+</svg>`;
+}
+
 //stackoverflow.com/a/15666143/3625298
 var MAX_PIXEL_RATIO = (function () {
 	var ctx = document.createElement("canvas").getContext("2d"),
@@ -1935,7 +1947,8 @@ function updateLobbyCard() {
 
 		// Show bet information if available
 		if (lobbyBetInfo && lobbyState.betAmount !== null) {
-			lobbyBetInfo.textContent = translateWithFallback("lobby.gameFor", { amount: lobbyState.betAmount.toFixed(2) }, `Game for ${lobbyState.betAmount.toFixed(2)} TON`);
+			const amountText = translateWithFallback("lobby.gameFor", { amount: lobbyState.betAmount.toFixed(2) }, `Game for ${lobbyState.betAmount.toFixed(2)}`);
+			lobbyBetInfo.innerHTML = amountText + getTonIconSVG(18);
 			lobbyBetInfo.style.display = "block";
 		} else if (lobbyBetInfo) {
 			lobbyBetInfo.style.display = "none";
@@ -2065,7 +2078,7 @@ async function loadUserBalance() {
 function updateBalanceDisplay() {
 	const balanceElem = document.getElementById('balanceDisplay');
 	if (balanceElem) {
-		balanceElem.textContent = userBalance + " TON";
+		balanceElem.innerHTML = userBalance + getTonIconSVG(16);
 	}
 }
 
@@ -2144,7 +2157,8 @@ function showVersusScreen(players, bank, winnerTakes) {
 
 	if (versusBank) {
 		if (bank > 0) {
-			versusBank.textContent = translateWithFallback("versus.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)} TON`);
+			const bankText = translateWithFallback("versus.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)}`);
+			versusBank.innerHTML = bankText + getTonIconSVG(18);
 			versusBank.style.display = "block";
 		} else {
 			versusBank.style.display = "none";
@@ -2152,7 +2166,8 @@ function showVersusScreen(players, bank, winnerTakes) {
 	}
 	if (versusWinnerTakes) {
 		if (winnerTakes > 0) {
-			versusWinnerTakes.textContent = translateWithFallback("versus.winnertakes", { amount: winnerTakes.toFixed(2) }, `Победитель забирает: ${winnerTakes.toFixed(2)} TON`);
+			const winnerText = translateWithFallback("versus.winnertakes", { amount: winnerTakes.toFixed(2) }, `Победитель забирает: ${winnerTakes.toFixed(2)}`);
+			versusWinnerTakes.innerHTML = winnerText + getTonIconSVG(18);
 			versusWinnerTakes.style.display = "block";
 		} else {
 			versusWinnerTakes.style.display = "none";
@@ -2219,24 +2234,25 @@ function showGameOverScreen(isVictory, data) {
 
 	if (gameOverContent) {
 		let content = "";
+		const tonIcon = getTonIconSVG(18);
 		if (isVictory) {
 			const bank = data.bank || 0;
 			const commission = data.commission || 0;
 			const winnings = data.winnings || 0;
 			content = `
-				<p>${translateWithFallback("gameover.youwon", { amount: winnings.toFixed(2) }, `Вы выиграли: +${winnings.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)} TON`)}</p>
-				<p>${translateWithFallback("gameover.commission", { amount: commission.toFixed(2) }, `Комиссия: -${commission.toFixed(2)} TON`)}</p>
-				<p><strong>${translateWithFallback("gameover.yourwinnings", { amount: winnings.toFixed(2) }, `Ваш выигрыш: ${winnings.toFixed(2)} TON`)}</strong></p>
+				<p>${translateWithFallback("gameover.youwon", { amount: winnings.toFixed(2) }, `Вы выиграли: +${winnings.toFixed(2)}`)}${tonIcon}</p>
+				<p>${translateWithFallback("gameover.bank", { amount: bank.toFixed(2) }, `Банк: ${bank.toFixed(2)}`)}${tonIcon}</p>
+				<p>${translateWithFallback("gameover.commission", { amount: commission.toFixed(2) }, `Комиссия: -${commission.toFixed(2)}`)}${tonIcon}</p>
+				<p><strong>${translateWithFallback("gameover.yourwinnings", { amount: winnings.toFixed(2) }, `Ваш выигрыш: ${winnings.toFixed(2)}`)}${tonIcon}</strong></p>
 			`;
 		} else {
 			const lost = data.lost || 0;
 			const winner = data.winner || "Unknown";
 			const theirWinnings = data.theirWinnings || 0;
 			content = `
-				<p>${translateWithFallback("gameover.lost", { amount: lost.toFixed(2) }, `Проиграно: -${lost.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.lost", { amount: lost.toFixed(2) }, `Проиграно: -${lost.toFixed(2)}`)}${tonIcon}</p>
 				<p>${translateWithFallback("gameover.winner", { username: winner }, `Победитель: @${winner}`)}</p>
-				<p>${translateWithFallback("gameover.theirwinnings", { amount: theirWinnings.toFixed(2) }, `Его выигрыш: ${theirWinnings.toFixed(2)} TON`)}</p>
+				<p>${translateWithFallback("gameover.theirwinnings", { amount: theirWinnings.toFixed(2) }, `Его выигрыш: ${theirWinnings.toFixed(2)}`)}${tonIcon}</p>
 			`;
 		}
 		gameOverContent.innerHTML = content;
