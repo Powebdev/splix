@@ -2063,7 +2063,10 @@ async function loadUserBalance() {
  * Update balance display in UI
  */
 function updateBalanceDisplay() {
-	// Balance display removed from UI
+	const balanceElem = document.getElementById('balanceDisplay');
+	if (balanceElem) {
+		balanceElem.textContent = userBalance + " TON";
+	}
 }
 
 /**
